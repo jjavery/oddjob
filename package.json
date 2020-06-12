@@ -1,0 +1,18 @@
+{
+  "name": "oddjob",
+  "version": "0.1.0",
+  "description": "A job queue for Node.js applications",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docs": "jsdoc2md --template README.template.hbs.md --plugin packages/dmd-oddjob --files packages/oddjob/src/*.js > README.md"
+  },
+  "author": "James P. Javery",
+  "license": "MIT",
+  "devDependencies": {
+    "jsdoc-to-markdown": "^6.0.1"
+  }
+}

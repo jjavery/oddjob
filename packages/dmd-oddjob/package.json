@@ -1,0 +1,21 @@
+{
+  "name": "@jjavery/dmd-oddjob",
+  "author": "Lloyd Brookes <75pound@gmail.com>",
+  "version": "0.1.10",
+  "description": "Plugin for jsdoc2md to produce markdown suitable for oddjob",
+  "repository": "https://github.com/jjavery/oddjob.git",
+  "main": "./src/dmd-oddjob.js",
+  "keywords": [
+    "dmd",
+    "jsdoc2md",
+    "oddjob",
+    "jsdoc",
+    "docs",
+    "documentation"
+  ],
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {},
+  "license": "MIT"
+}

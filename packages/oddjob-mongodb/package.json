@@ -1,0 +1,24 @@
+{
+  "name": "@jjavery/oddjob-mongodb",
+  "version": "0.1.0",
+  "description": "MongoDB plugin for @jjavery/oddjob",
+  "main": "src/db.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "author": "James P. Javery",
+  "license": "MIT",
+  "dependencies": {
+    "debug": "^4.1.1",
+    "mongoose": "^5.9.18"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^7.2.0"
+  },
+  "mocha": {
+    "recursive": true,
+    "slow": 500,
+    "require": "test/test-env.js"
+  }
+}

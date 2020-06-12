@@ -1,0 +1,116 @@
+# oddjob
+
+A job queue for Node.js applications
+
+*Why use a job queue?* If your application needs to reliably complete units of work without blocking request handlers or API calls, you might benefit from a job queue.
+
+*Why use oddjob?* If your stack already includes Node.js and MongoDB or one of the other supported data access layers, then oddjob might be a good fit for your solution.
+
+## Features
+
+* **Distributed** - Multiple worker processes can run from the same job queue, and multiple clients can push jobs to the same job queue.
+* **Concurrency** - A worker process can run multiple jobs simultaneously.
+* **Persistence** - Jobs will run at least once (except jobs that expire prior to being run).
+* **Idempotency** - Jobs can be set to run no more than once, even if multiple clients attempt to push the same job into the queue.
+* **Recurrences** - Jobs can be set to run on multiple dates and times using cron expressions.
+* **Schedule** - Jobs can be scheduled to run no sooner than a specific date and time.
+* **Expiration** - Jobs can be scheduled to run no later than a specific date and time.
+* **Delay** - Jobs can set to run after a time delay.
+* **Retries** - A failed job can be retried a limited number of times.
+* **Locking** - A job queue will lock jobs prior to running them. Jobs that do not complete prior to the lock timeout can be re-run. A worker can update a job's lock to continue to hold it past its initial timeout.
+* **Priority** - Jobs can be set to run before other jobs (that are eligible to be run).
+* **Messages** - An application-defined message can be included with each job.
+* **Logging** - Workers can write log messages to a job's log stream.
+* **Results** - Workers can return a result to store with a job.
+* **Types** - Support for multiple job types in the same job queue.
+* **Events** - Job queues are event emitters and emit events when various actions occur.
+* **Promises** - Promise-based API (async/await).
+* **Metadata** - Jobs record the hostname &amp; PID of clients and workers, and the timing of job events.
+* **Plugins** - Pluggable data access layer for various database systems (MongoDB, SQLite, etc.)
+
+## Installation
+
+Install with NPM
+
+```shell
+$ npm install @jjavery/oddjob
+$ npm install @jjavery/oddjob-mongodb # or oddjob-sqlite etc.
+```
+
+You will also need a compatible database server to store your jobs, logs, results, etc.
+
+## Example
+
+### worker.js:
+
+```javascript
+// Get a reference to the JobQueue class
+const { JobQueue } = require('@jjavery/oddjob');
+
+// A module that sends emails
+const email = require('./email');
+
+// Create an instance of a JobQueue. Connects to localhost by default.
+const jobQueue = new JobQueue();
+
+// Tell the JobQueue to handle jobs of type 'send-email' with the provided
+// async function. Concurrency is set to handle up to four jobs of this type
+// simultaneously.
+jobQueue.handle('send-email', { concurrency: 4 }, async (job) => {
+  const { message } = job;
+
+  // Send the email. If an exception is thrown, it will be written to the job
+  // log for this job.
+  const result = await email.send(message);
+
+  // Write to the job log for this job
+  job.log(`Email sent`);
+
+  // Return the result. The return value, if any, will be stored with the job.
+  return result;
+});
+
+// Handle errors
+jobQueue.on('error', (err) => {
+  console.log(err);
+});
+
+// Start the JobQueue
+jobQueue.start();
+```
+
+### client.js:
+
+```javascript
+// Get references to the JobQueue and Job classes
+const { JobQueue, Job } = require('@jjavery/oddjob');
+
+// Create an instance of a JobQueue. Connects to localhost by default.
+const jobQueue = new JobQueue();
+
+(async () => {
+  // Push a new Job into the JobQueue
+  await jobQueue.push(
+    new Job('send-email', {
+      message: {
+        from: 'someone@example.com',
+        to: 'someoneelse@example.com',
+        subject: 'This is an example',
+        text: 'Hi Someone, How do you like my example? -Someone Else'
+      }
+    }
+  ));
+
+  // Disconnect from the database
+  await jobQueue.disconnect();
+})();
+
+```
+
+# API Reference
+
+{{>main}}
+
+* * *
+
+Copyright &copy; 2020 James P. Javery [@jjavery](https://github.com/jjavery)

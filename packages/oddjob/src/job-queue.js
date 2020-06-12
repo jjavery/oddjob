@@ -1,0 +1,569 @@
+const os = require('os');
+const EventEmitter = require('events');
+const debug = require('debug')('oddjob');
+const date = require('./date');
+const plugins = require('./plugins');
+const Job = require('./job');
+
+const debug_loop = debug.extend('loop');
+const debug_poll = debug.extend('poll');
+const debug_run = debug.extend('run');
+
+const worker = `${os.hostname()}[${process.pid}]`;
+
+/**
+ * Provides access to a job queue
+ * @extends EventEmitter
+ */
+class JobQueue extends EventEmitter {
+  /**
+   * Emitted when an error is thrown in the constructor or run loop.
+   * @event JobQueue#error
+   * @type {Error} - The error object that was thrown.
+   */
+
+  /**
+   * Emitted when an error is thrown by a handler.
+   * @event JobQueue#handler:error
+   * @type {Error} - The error object that was thrown.
+   */
+
+  /**
+   * Emitted when the job queue is connected to the database.
+   * @event JobQueue#connect
+   */
+
+  /**
+   * Emitted when the job queue has disconnected from the database.
+   * @event JobQueue#disconnect
+   */
+
+  /**
+   * Emitted when a job has been pushed into the job queue.
+   * @event JobQueue#push
+   * @type {Job} - Job that was pushed.
+   */
+
+  /**
+   * Emitted when a job has been passed to a handler.
+   * @event JobQueue#handle
+   * @type {Object} - Object that describes the handler
+   */
+
+  /**
+   * Emitted when the job queue starts its run loop.
+   * @event JobQueue#start
+   */
+
+  /**
+   * Emitted when the job queue pauses its run loop.
+   * @event JobQueue#pause
+   */
+
+  /**
+   * Emitted when the job queue stops its run loop.
+   * @event JobQueue#stop
+   */
+
+  /**
+   * Emitted before a job runs.
+   * @event JobQueue#before:run
+   * @type {Job} - Job that is running.
+   */
+
+  /**
+   * Emitted after a job runs.
+   * @event JobQueue#after:run
+   * @type {Job} - Job that is running.
+   */
+
+  /**
+   * Emitted when a job times out and is canceled.
+   * @event JobQueue#timeout
+   * @type {Job} - Job that timed out.
+   */
+
+  /**
+   * Maximum number of jobs that may run concurrently
+   * @type {number}
+   */
+  concurrency;
+
+  /**
+   * Seconds to wait before a running job is considered timed-out and eligible for retry or failure
+   * @type {number}
+   */
+  timeout;
+
+  /**
+   * Milliseconds to sleep after completing a run loop when no jobs are acquired
+   * @type {number}
+   */
+  idleSleep;
+
+  /**
+   * Milliseconds to sleep after completing a run loop when a job is acquired
+   * @type {number}
+   */
+  activeSleep;
+
+  #db;
+  #connected = false;
+  #handlers = {};
+  #timer;
+  #looping = false;
+  #running = 0;
+  #runningJobs = {};
+
+  /**
+   * Number of jobs that are currently running
+   * @type {number}
+   */
+  get running() {
+    return this.#running;
+  }
+
+  /**
+   * Whether the number of jobs currently running is equal to the maximum concurrency
+   * @type {boolean}
+   */
+  get isSaturated() {
+    return this.#running >= this.concurrency;
+  }
+
+  /**
+   * @param {Object} options={} - Optional parameters
+   * @param {number} options.concurrency=10 - Maximum number of jobs that may run concurrently
+   * @param {number} options.timeout=60 - Seconds to wait before a running job is considered timed-out and eligible for retry or failure
+   * @param {number} options.idleSleep=1000 - Milliseconds to sleep after completing a run loop when no jobs are acquired
+   * @param {number} options.activeSleep=10 - Milliseconds to sleep after completing a run loop when a job is acquired
+   */
+  constructor({
+    concurrency = 10,
+    timeout = 60,
+    idleSleep = 1000,
+    activeSleep = 10
+  } = {}) {
+    super();
+
+    this.#db = plugins.db;
+    this.concurrency = concurrency;
+    this.timeout = timeout;
+    this.idleSleep = idleSleep;
+    this.activeSleep = activeSleep;
+
+    this.connect().catch((err) => {
+      this.emit('error', err);
+    });
+
+    const timer = setInterval(() => this._cancelTimedOutJobs(), 1000);
+    timer.unref();
+  }
+
+  /**
+   * Establish a connection to the database server
+   */
+  async connect() {
+    if (this.#connected) {
+      return;
+    }
+
+    await this.#db.connect();
+
+    this.#connected = true;
+
+    debug('Connected');
+
+    this.emit('connect');
+  }
+
+  /**
+   * Disconnect from the database server
+   */
+  async disconnect() {
+    if (!this.#connected) {
+      return;
+    }
+
+    await this.#db.disconnect();
+
+    this.#connected = false;
+
+    debug('Disconnected');
+
+    this.emit('disconnect');
+  }
+
+  /**
+   * Push a job into the job queue
+   * @param {Job} job - The job to push into the queue
+   */
+  async push(job) {
+    await job._save();
+
+    debug('Pushed new job type "%s" id "%s"', job.type, job.id);
+
+    this.emit('push', job);
+  }
+
+  /**
+   * Configure the job queue to handle jobs of a particular type
+   * @param {string} type - The job type. Only jobs of this type will be passed to the handle function.
+   * @param {Object} options={} - Optional parameters
+   * @param {number} options.concurrency=1 - Maximum number of jobs that this handler may run concurrently
+   * @param {Function} fn - An async function that takes a single job as its parameter
+   */
+  handle(type, options, fn) {
+    if (fn == null) {
+      fn = options;
+      options = null;
+    }
+
+    if (this.#handlers[type] != null) {
+      throw new Error(`A handler for type ${type} already exists`);
+    }
+
+    const concurrency = options?.concurrency || 1;
+
+    const handler = { type, fn, concurrency, running: 0 };
+
+    this.#handlers[type] = handler;
+
+    debug('Added a handler for type "%s"', type);
+    debug('Handler Count: %d', Object.keys(this.#handlers).length);
+
+    this.emit('handle', handler);
+  }
+
+  /**
+   * Starts the job queue
+   */
+  start() {
+    if (this.#looping) {
+      return;
+    }
+
+    debug_loop('Started looping');
+
+    this.emit('start');
+
+    this.#looping = true;
+
+    this._loop();
+  }
+
+  /**
+   * Pauses the job queue
+   */
+  pause() {
+    this.stop(false);
+  }
+
+  /**
+   * Stops the job queue
+   */
+  stop(disconnect = true) {
+    if (!this.#looping) {
+      return;
+    }
+
+    this.#looping = false;
+
+    clearTimeout(this.#timer);
+
+    if (!disconnect) {
+      debug_loop('Paused looping');
+
+      this.emit('pause');
+    } else {
+      debug_loop('Stopped looping');
+
+      this.emit('stop');
+
+      this.disconnect();
+    }
+  }
+
+  /**
+   * The run loop
+   * @private
+   */
+  async _loop() {
+    debug_loop('Begin loop');
+    debug_loop('Running Count: %d', this.#running);
+
+    let job;
+
+    // Get the types that are currently runnable
+    const types = this._getRunnableTypes();
+
+    if (this.isSaturated) {
+      debug_loop(
+        'Not polling; reached maximum concurrency: %d',
+        this.concurrency
+      );
+    } else if (types.length === 0) {
+      debug_loop('Not polling; no runnable types');
+    } else {
+      try {
+        // Poll for a job
+        job = await this._poll(types);
+
+        if (job) {
+          if (job.hasExpired) {
+            // Housekeeping: expire jobs that have expired
+            await job._expire();
+
+            debug_loop('Updated expired job');
+          } else if (!job.canRetry) {
+            // Housekeeping: fail jobs that can't be retried
+            await job._fail();
+
+            debug_loop('Updated failed job');
+          } else {
+            // Found a job? Run it
+            this._run(job);
+          }
+        }
+      } catch (err) {
+        this.emit('error', err);
+      }
+    }
+
+    // If one job was found in the queue, there might be more, so don't sleep
+    // long. If the queue is empty, can take a longer nap.
+    const sleep = job ? this.activeSleep : this.idleSleep;
+
+    debug_loop('End loop');
+
+    debug_loop('Sleeping for %dms', sleep);
+
+    // Keep a reference to the timer so it can be canceled with .pause() or .stop()
+    this.#timer = setTimeout(this._loop.bind(this), sleep);
+  }
+
+  /**
+   * Poll for a job to run
+   * @param {string[]} types - An array of job types to poll for
+   * @returns {Job|undefined} A job with the 'waiting' status, ready to be run, or undefined if no jobs are waiting
+   * @private
+   */
+  async _poll(types) {
+    debug_poll('Begin poll');
+
+    // Get the future date and time when the lock will time out
+    const timeout = date.add(new Date(), this.timeout, 'seconds');
+
+    const data = await this.#db.pollForRunnableJob(types, timeout, worker);
+
+    if (!data) {
+      debug_poll('End poll; no jobs found');
+      return;
+    }
+
+    const job = new Job(data);
+
+    debug_poll('End poll');
+
+    return job;
+  }
+
+  /**
+   * Run a job
+   * @param {Job} job
+   * @private
+   */
+  _run(job) {
+    debug_run('Begin run job type "%s" id "%s"', job.type, job.id);
+
+    this.emit('before:run', job);
+
+    // Get the handler for this job type
+    const handler = this._getHandler(job.type);
+
+    // Increment counts of currently running jobs for the job queue and handler
+    this.#running++;
+    handler.running++;
+
+    // Add the job to the list of currently running jobs
+    const runningJob = this._addRunningJob(job);
+
+    debug_run('Type "%s" Running Count: %d', job.type, handler.running);
+
+    handler
+      .fn(job, runningJob.onCancel)
+      .then((result) => {
+        if (runningJob.canceled) {
+          debug_run(
+            'Job type "%s" id "%s" timed out and this run was canceled',
+            job.type,
+            job.id
+          );
+          return;
+        }
+
+        return job._complete(result);
+      })
+      .catch((err) => {
+        debug_run(
+          'Error while running job type "%s" id "%s"',
+          job.type,
+          job.id
+        );
+        if (err?.message) {
+          debug_run('Error: %s', err.message);
+        }
+
+        this.emit('handler:error', err);
+
+        return job.error(err);
+      })
+      .finally(() => {
+        // Remove the job from the list of currently running jobs
+        this._removeRunningJob(job);
+
+        // Decrement counts of currently running jobs for the job queue and handler
+        this.#running--;
+        handler.running--;
+
+        debug_run('End run job type "%s" id "%s"', job.type, job.id);
+
+        this.emit('after:run', job);
+      });
+  }
+
+  /**
+   * Adds a job to the list of currently running jobs and returns an object with an onCancel function to be passed to the job's handler. Handlers can use the onCancel function to register listeners for the cancel event. Job handlers are canceled if they don't complete before the timeout.
+   *
+   * @param {Job} job - The job to add to the list of running jobs
+   * @returns {Object} - An object that describes the running job
+   * @private
+   */
+  _addRunningJob(job) {
+    const cancelListeners = [];
+
+    const onCancel = (listener) => {
+      if (typeof listener !== 'function') {
+        throw new Error('listener must be a function');
+      }
+      cancelListeners.push(listener);
+    };
+
+    const runningJob = { job, cancelListeners, canceled: false, onCancel };
+
+    this.#runningJobs[job.id] = runningJob;
+
+    return runningJob;
+  }
+
+  /**
+   * Removes a job from the list of currently running jobs
+   * @param {Job} job - The job to remove from the list of running jobs
+   * @private
+   */
+  _removeRunningJob(job) {
+    delete this.#runningJobs[job.id];
+  }
+
+  /**
+   * Cancels a currently running job by invoking any listeners its handler has added via the onCancel function
+   * @param {Job} job - The job to cancel
+   * @private
+   */
+  _cancelRunningJob(job) {
+    const runningJob = this.#runningJobs[job.id];
+
+    if (runningJob.canceled) {
+      return;
+    }
+
+    const { cancelListeners } = runningJob;
+
+    for (let cancelListener of cancelListeners) {
+      try {
+        cancelListener();
+      } catch (err) {
+        emit('error', err);
+      }
+    }
+
+    runningJob.canceled = true;
+  }
+
+  /**
+   * Cancels any running jobs that have timed out
+   * @private
+   */
+  _cancelTimedOutJobs() {
+    const runningJobs = this.#runningJobs;
+    const keys = Object.keys(runningJobs);
+
+    for (let key of keys) {
+      const { job, canceled } = runningJobs[key];
+
+      if (canceled || !job.hasTimedOut) {
+        continue;
+      }
+
+      this._cancelRunningJob(job);
+
+      this.emit('timeout', job);
+    }
+  }
+
+  /**
+   * Gets a handler by type
+   * @param {string} type - The type of the handler to get
+   * @private
+   */
+  _getHandler(type) {
+    return this.#handlers[type];
+  }
+
+  /**
+   * Gets a list of types that are runnable, meaning they have not reached their concurrency limit
+   * @returns {string[]} Array of type names
+   * @private
+   */
+  _getRunnableTypes() {
+    const types = [];
+
+    const handlers = this.#handlers;
+    const keys = Object.keys(handlers);
+
+    for (let key of keys) {
+      const handler = handlers[key];
+      if (handler.running < handler.concurrency) {
+        types.push(key);
+      }
+    }
+
+    return types;
+  }
+
+  /**
+   * https://nodejs.org/api/events.html#events_emitter_once_eventname_listener
+   * @function JobQueue#once
+   * @param {string|symbol} eventName - The name of the event.
+   * @param {Function} listener - The callback function.
+   * @returns {EventEmitter}
+   */
+
+  /**
+   * https://nodejs.org/api/events.html#events_emitter_on_eventname_listener
+   * @function JobQueue#on
+   * @param {string|symbol} eventName - The name of the event.
+   * @param {Function} listener - The callback function.
+   * @returns {EventEmitter}
+   */
+
+  /**
+   * https://nodejs.org/api/events.html#events_emitter_off_eventname_listener
+   * @function JobQueue#off
+   * @param {string|symbol} eventName - The name of the event.
+   * @param {Function} listener - The callback function.
+   * @returns {EventEmitter}
+   */
+}
+
+module.exports = JobQueue;
