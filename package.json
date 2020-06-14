@@ -1,6 +1,7 @@
 {
-  "name": "oddjob",
-  "version": "0.1.0",
+  "name": "@jjavery/oddjob-monorepo",
+  "private": true,
+  "version": "0.2.0",
   "description": "A job queue for Node.js applications",
   "main": "index.js",
   "directories": {
@@ -8,11 +9,13 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "docs": "jsdoc2md --template README.template.hbs.md --plugin packages/dmd-oddjob --files packages/oddjob/src/*.js > README.md"
+    "docs": "jsdoc2md --template README.template.hbs.md --plugin @jjavery/dmd-jjavery --files packages/oddjob/src/*.js > README.md"
   },
-  "author": "James P. Javery",
+  "author": "James P. Javery <james.javery@gmail.com> (https://github.com/jjavery)",
   "license": "MIT",
   "devDependencies": {
+    "@jjavery/dmd-jjavery": "^0.1.0",
     "jsdoc-to-markdown": "^6.0.1"
-  }
+  },
+  "mochaExplorer.files": "packages/oddjob/test/**/*.js"
 }
