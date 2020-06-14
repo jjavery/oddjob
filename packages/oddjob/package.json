@@ -1,12 +1,12 @@
 {
   "name": "@jjavery/oddjob",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A job queue for Node.js applications",
   "main": "src/oddjob.js",
   "scripts": {
     "test": "mocha"
   },
-  "author": "James P. Javery",
+  "author": "James P. Javery  <james.javery@gmail.com> (https://github.com/jjavery)",
   "license": "MIT",
   "dependencies": {
     "cron-parser": "^2.15.0",

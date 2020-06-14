@@ -2,31 +2,31 @@
 
 A job queue for Node.js applications
 
-*Why use a job queue?* If your application needs to reliably complete units of work without blocking request handlers or API calls, you might benefit from a job queue.
+_Why use a job queue?_ If your application needs to reliably complete units of work without blocking request handlers or API calls, you might benefit from a job queue.
 
-*Why use oddjob?* If your stack already includes Node.js and MongoDB or one of the other supported data access layers, then oddjob might be a good fit for your solution.
+_Why use oddjob?_ If your stack already includes Node.js and MongoDB or one of the other supported data access layers, then oddjob might be a good fit for your solution.
 
 ## Features
 
-* **Distributed** - Multiple worker processes can run from the same job queue, and multiple clients can push jobs to the same job queue.
-* **Concurrency** - A worker process can run multiple jobs simultaneously.
-* **Persistence** - Jobs will run at least once (except jobs that expire prior to being run).
-* **Idempotency** - Jobs can be set to run no more than once, even if multiple clients attempt to push the same job into the queue.
-* **Recurrences** - Jobs can be set to run on multiple dates and times using cron expressions.
-* **Schedule** - Jobs can be scheduled to run no sooner than a specific date and time.
-* **Expiration** - Jobs can be scheduled to run no later than a specific date and time.
-* **Delay** - Jobs can set to run after a time delay.
-* **Retries** - A failed job can be retried a limited number of times.
-* **Locking** - A job queue will lock jobs prior to running them. Jobs that do not complete prior to the lock timeout can be re-run. A worker can update a job's lock to continue to hold it past its initial timeout.
-* **Priority** - Jobs can be set to run before other jobs (that are eligible to be run).
-* **Messages** - An application-defined message can be included with each job.
-* **Logging** - Workers can write log messages to a job's log stream.
-* **Results** - Workers can return a result to store with a job.
-* **Types** - Support for multiple job types in the same job queue.
-* **Events** - Job queues are event emitters and emit events when various actions occur.
-* **Promises** - Promise-based API (async/await).
-* **Metadata** - Jobs record the hostname &amp; PID of clients and workers, and the timing of job events.
-* **Plugins** - Pluggable data access layer for various database systems (MongoDB, SQLite, etc.)
+- **Distributed** - Multiple worker processes can run from the same job queue, and multiple clients can push jobs to the same job queue.
+- **Concurrency** - A worker process can run multiple jobs simultaneously.
+- **Persistence** - Jobs will run at least once (except jobs that expire prior to being run).
+- **Idempotency** - Jobs can be set to run no more than once, even if multiple clients attempt to push the same job into the queue.
+- **Recurrences** - Jobs can be set to run on multiple dates and times using cron expressions.
+- **Schedule** - Jobs can be scheduled to run no sooner than a specific date and time.
+- **Expiration** - Jobs can be scheduled to run no later than a specific date and time.
+- **Delay** - Jobs can set to run after a time delay.
+- **Retries** - A failed job can be retried a limited number of times.
+- **Locking** - A job queue will lock jobs prior to running them. Jobs that do not complete prior to the lock timeout can be re-run. A worker can update a job's lock to continue to hold it past its initial timeout.
+- **Priority** - Jobs can be set to run before other jobs (that are eligible to be run).
+- **Messages** - An application-defined message can be included with each job.
+- **Logging** - Workers can write log messages to a job's log stream.
+- **Results** - Workers can return a result to store with a job.
+- **Types** - Support for multiple job types in the same job queue.
+- **Events** - Job queues are event emitters and emit events when various actions occur.
+- **Promises** - Promise-based API (async/await).
+- **Metadata** - Jobs record the hostname &amp; PID of clients and workers, and the timing of job events.
+- **Plugins** - Pluggable data access layer for various database systems (MongoDB, SQLite, etc.)
 
 ## Installation
 
@@ -98,19 +98,18 @@ const jobQueue = new JobQueue();
         subject: 'This is an example',
         text: 'Hi Someone, How do you like my example? -Someone Else'
       }
-    }
-  ));
+    })
+  );
 
   // Disconnect from the database
   await jobQueue.disconnect();
 })();
-
 ```
 
 # API Reference
 
 {{>main}}
 
-* * *
+---
 
 Copyright &copy; 2020 James P. Javery [@jjavery](https://github.com/jjavery)
