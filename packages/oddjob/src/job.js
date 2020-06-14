@@ -8,15 +8,15 @@ const client = `${os.hostname()}[${process.pid}]`;
 
 /** Provides access to the properties and methods needed to define a job */
 class Job {
-  #db;
-  #data;
+  _db;
+  _data;
 
   /**
    * Job ID
    * @type {string}
    */
   get id() {
-    return this.#data.id;
+    return this._data.id;
   }
 
   /**
@@ -24,7 +24,7 @@ class Job {
    * @type {string}
    */
   get type() {
-    return this.#data.type;
+    return this._data.type;
   }
 
   /**
@@ -32,7 +32,7 @@ class Job {
    * @type {any}
    */
   get message() {
-    return this.#data.message;
+    return this._data.message;
   }
 
   /**
@@ -40,7 +40,7 @@ class Job {
    * @type {string}
    */
   get unique_id() {
-    return this.#data.unique_id;
+    return this._data.unique_id;
   }
 
   /**
@@ -48,7 +48,7 @@ class Job {
    * @type {string}
    */
   get recurring() {
-    return this.#data.recurring;
+    return this._data.recurring;
   }
 
   /**
@@ -56,7 +56,7 @@ class Job {
    * @type {Date}
    */
   get scheduled() {
-    return this.#data.scheduled;
+    return this._data.scheduled;
   }
 
   /**
@@ -64,7 +64,7 @@ class Job {
    * @type {Date}
    */
   get expire() {
-    return this.#data.expire;
+    return this._data.expire;
   }
 
   /**
@@ -72,7 +72,7 @@ class Job {
    * @type {number}
    */
   get retries() {
-    return this.#data.retries;
+    return this._data.retries;
   }
 
   /**
@@ -80,7 +80,7 @@ class Job {
    * @type {number}
    */
   get try() {
-    return this.#data.try;
+    return this._data.try;
   }
 
   /**
@@ -88,7 +88,7 @@ class Job {
    * @type {number}
    */
   get priority() {
-    return this.#data.priority;
+    return this._data.priority;
   }
 
   /**
@@ -96,7 +96,7 @@ class Job {
    * @type {Date}
    */
   get acquired() {
-    return this.#data.acquired;
+    return this._data.acquired;
   }
 
   /**
@@ -104,7 +104,7 @@ class Job {
    * @type {Date}
    */
   get timeout() {
-    return this.#data.timeout;
+    return this._data.timeout;
   }
 
   /**
@@ -112,7 +112,7 @@ class Job {
    * @type {boolean}
    */
   get isComplete() {
-    return this.#data.status === 'completed';
+    return this._data.status === 'completed';
   }
 
   /**
@@ -120,7 +120,7 @@ class Job {
    * @type {boolean}
    */
   get hasTimedOut() {
-    return this.#data.timeout != null && this.#data.timeout <= new Date();
+    return this._data.timeout != null && this._data.timeout <= new Date();
   }
 
   /**
@@ -128,7 +128,7 @@ class Job {
    * @type {boolean}
    */
   get hasExpired() {
-    return this.#data.expire != null && this.#data.expire <= new Date();
+    return this._data.expire != null && this._data.expire <= new Date();
   }
 
   /**
@@ -136,7 +136,7 @@ class Job {
    * @type {boolean}
    */
   get canRetry() {
-    return this.#data.try <= this.#data.retries + 1;
+    return this._data.try <= this._data.retries + 1;
   }
 
   /**
@@ -168,16 +168,16 @@ class Job {
       throw new Error('type is required');
     }
 
-    this.#db = plugins.db;
+    this._db = plugins.db;
 
     if (typeof type !== 'string' && type.id) {
-      this.#data = type;
+      this._data = type;
       return;
     }
 
-    const data = this.#db.createJob();
+    const data = this._db.createJob();
 
-    this.#data = data;
+    this._data = data;
 
     data.type = type;
     data.message = message;
@@ -213,9 +213,9 @@ class Job {
     const now = new Date();
     const timeout = date.add(now, seconds, 'seconds');
 
-    const data = await this.#db.updateRunningJob(job, { timeout });
+    const data = await this._db.updateRunningJob(job, { timeout });
 
-    this.#data = data;
+    this._data = data;
 
     debug(
       'Job type "%s" id "%s" timeout updated to %d seconds',
@@ -236,12 +236,12 @@ class Job {
       level = 'info';
     }
 
-    await this.#db.writeJobLog(this.id, level, message);
+    await this._db.writeJobLog(this.id, level, message);
 
     debug(
       'Job type "%s" id "%s" wrote log level "%s":',
-      this.#data.type,
-      this.#data.id,
+      this._data.type,
+      this._data.id,
       level
     );
     debug('%j', message);
@@ -285,14 +285,14 @@ class Job {
    * @param {number} limit=100 - The maximum number of log messages to return
    */
   async readLog(skip = 0, limit = 100) {
-    return await this.#db.readJobLog(this.id, skip, limit);
+    return await this._db.readJobLog(this.id, skip, limit);
   }
 
   /**
    * Retrieve the job's result from the database
    */
   async readResult() {
-    return await this.#db.readJobResult(this.id);
+    return await this._db.readJobResult(this.id);
   }
 
   /**
@@ -303,7 +303,7 @@ class Job {
   static async load(id) {
     debug('Begin load job id "%s"', id);
 
-    const data = await this.#db.findJobById(id);
+    const data = await this._db.findJobById(id);
 
     debug('End load job type "%s" id "%s"', data.type, data.id);
 
@@ -311,11 +311,11 @@ class Job {
   }
 
   async _save() {
-    debug('Begin save job type "%s" id "%s"', this.#data.type, this.#data.id);
+    debug('Begin save job type "%s" id "%s"', this._data.type, this._data.id);
 
-    await this.#data.save();
+    await this._data.save();
 
-    debug('End save job type "%s" id "%s"', this.#data.type, this.#data.id);
+    debug('End save job type "%s" id "%s"', this._data.type, this._data.id);
   }
 
   async _complete(result) {
@@ -328,7 +328,7 @@ class Job {
     }
 
     const now = new Date();
-    const _id = this.#data._id;
+    const _id = this._data._id;
     const stopwatches = {
       waiting:
         this.acquired && this.scheduled
@@ -360,12 +360,12 @@ class Job {
       });
     }
 
-    const data = await this.#db.updateRunningJob(job, update);
+    const data = await this._db.updateRunningJob(job, update);
 
-    this.#data = data;
+    this._data = data;
 
     if (result != null) {
-      await this.#db.writeJobResult(this.id, result);
+      await this._db.writeJobResult(this.id, result);
     }
 
     debug(
@@ -386,9 +386,9 @@ class Job {
       modified: now
     };
 
-    const data = await this.#db.updateJobById(this.id, update);
+    const data = await this._db.updateJobById(this.id, update);
 
-    this.#data = data;
+    this._data = data;
 
     debug(
       'Job type "%s" id "%s" timeout extended by %d seconds',
@@ -404,7 +404,7 @@ class Job {
     const update = {
       status: 'failed',
       modified: now,
-      try: this.#data.try - 1
+      try: this._data.try - 1
     };
 
     if (this.recurring) {
@@ -416,9 +416,9 @@ class Job {
       });
     }
 
-    const data = await this.#db.updateJobById(this.id, update);
+    const data = await this._db.updateJobById(this.id, update);
 
-    this.#data = data;
+    this._data = data;
 
     debug('Job type "%s" id "%s" failed', data.type, data.id);
   }

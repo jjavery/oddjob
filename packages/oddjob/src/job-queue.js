@@ -24,7 +24,7 @@ class JobQueue extends EventEmitter {
 
   /**
    * Emitted when an error is thrown by a handler.
-   * @event JobQueue#handler:error
+   * @event JobQueue#handlerError
    * @type {Error} - The error object that was thrown.
    */
 
@@ -67,13 +67,13 @@ class JobQueue extends EventEmitter {
 
   /**
    * Emitted before a job runs.
-   * @event JobQueue#before:run
+   * @event JobQueue#beforeRun
    * @type {Job} - Job that is running.
    */
 
   /**
    * Emitted after a job runs.
-   * @event JobQueue#after:run
+   * @event JobQueue#afterRun
    * @type {Job} - Job that is running.
    */
 
@@ -107,20 +107,20 @@ class JobQueue extends EventEmitter {
    */
   activeSleep;
 
-  #db;
-  #connected = false;
-  #handlers = {};
-  #timer;
-  #looping = false;
-  #running = 0;
-  #runningJobs = {};
+  _db;
+  _connected = false;
+  _handlers = {};
+  _timer;
+  _looping = false;
+  _running = 0;
+  _runningJobs = {};
 
   /**
    * Number of jobs that are currently running
    * @type {number}
    */
   get running() {
-    return this.#running;
+    return this._running;
   }
 
   /**
@@ -128,7 +128,7 @@ class JobQueue extends EventEmitter {
    * @type {boolean}
    */
   get isSaturated() {
-    return this.#running >= this.concurrency;
+    return this._running >= this.concurrency;
   }
 
   /**
@@ -146,7 +146,7 @@ class JobQueue extends EventEmitter {
   } = {}) {
     super();
 
-    this.#db = plugins.db;
+    this._db = plugins.db;
     this.concurrency = concurrency;
     this.timeout = timeout;
     this.idleSleep = idleSleep;
@@ -164,13 +164,13 @@ class JobQueue extends EventEmitter {
    * Establish a connection to the database server
    */
   async connect() {
-    if (this.#connected) {
+    if (this._connected) {
       return;
     }
 
-    await this.#db.connect();
+    await this._db.connect();
 
-    this.#connected = true;
+    this._connected = true;
 
     debug('Connected');
 
@@ -181,13 +181,13 @@ class JobQueue extends EventEmitter {
    * Disconnect from the database server
    */
   async disconnect() {
-    if (!this.#connected) {
+    if (!this._connected) {
       return;
     }
 
-    await this.#db.disconnect();
+    await this._db.disconnect();
 
-    this.#connected = false;
+    this._connected = false;
 
     debug('Disconnected');
 
@@ -219,7 +219,7 @@ class JobQueue extends EventEmitter {
       options = null;
     }
 
-    if (this.#handlers[type] != null) {
+    if (this._handlers[type] != null) {
       throw new Error(`A handler for type ${type} already exists`);
     }
 
@@ -227,10 +227,10 @@ class JobQueue extends EventEmitter {
 
     const handler = { type, fn, concurrency, running: 0 };
 
-    this.#handlers[type] = handler;
+    this._handlers[type] = handler;
 
     debug('Added a handler for type "%s"', type);
-    debug('Handler Count: %d', Object.keys(this.#handlers).length);
+    debug('Handler Count: %d', Object.keys(this._handlers).length);
 
     this.emit('handle', handler);
   }
@@ -239,7 +239,7 @@ class JobQueue extends EventEmitter {
    * Starts the job queue
    */
   start() {
-    if (this.#looping) {
+    if (this._looping) {
       return;
     }
 
@@ -247,7 +247,7 @@ class JobQueue extends EventEmitter {
 
     this.emit('start');
 
-    this.#looping = true;
+    this._looping = true;
 
     this._loop();
   }
@@ -263,13 +263,13 @@ class JobQueue extends EventEmitter {
    * Stops the job queue
    */
   stop(disconnect = true) {
-    if (!this.#looping) {
+    if (!this._looping) {
       return;
     }
 
-    this.#looping = false;
+    this._looping = false;
 
-    clearTimeout(this.#timer);
+    clearTimeout(this._timer);
 
     if (!disconnect) {
       debug_loop('Paused looping');
@@ -290,7 +290,7 @@ class JobQueue extends EventEmitter {
    */
   async _loop() {
     debug_loop('Begin loop');
-    debug_loop('Running Count: %d', this.#running);
+    debug_loop('Running Count: %d', this._running);
 
     let job;
 
@@ -339,7 +339,7 @@ class JobQueue extends EventEmitter {
     debug_loop('Sleeping for %dms', sleep);
 
     // Keep a reference to the timer so it can be canceled with .pause() or .stop()
-    this.#timer = setTimeout(this._loop.bind(this), sleep);
+    this._timer = setTimeout(this._loop.bind(this), sleep);
   }
 
   /**
@@ -354,7 +354,7 @@ class JobQueue extends EventEmitter {
     // Get the future date and time when the lock will time out
     const timeout = date.add(new Date(), this.timeout, 'seconds');
 
-    const data = await this.#db.pollForRunnableJob(types, timeout, worker);
+    const data = await this._db.pollForRunnableJob(types, timeout, worker);
 
     if (!data) {
       debug_poll('End poll; no jobs found');
@@ -376,13 +376,13 @@ class JobQueue extends EventEmitter {
   _run(job) {
     debug_run('Begin run job type "%s" id "%s"', job.type, job.id);
 
-    this.emit('before:run', job);
+    this.emit('beforeRun', job);
 
     // Get the handler for this job type
     const handler = this._getHandler(job.type);
 
     // Increment counts of currently running jobs for the job queue and handler
-    this.#running++;
+    this._running++;
     handler.running++;
 
     // Add the job to the list of currently running jobs
@@ -414,7 +414,7 @@ class JobQueue extends EventEmitter {
           debug_run('Error: %s', err.message);
         }
 
-        this.emit('handler:error', err);
+        this.emit('handlerError', err);
 
         return job.error(err);
       })
@@ -423,12 +423,12 @@ class JobQueue extends EventEmitter {
         this._removeRunningJob(job);
 
         // Decrement counts of currently running jobs for the job queue and handler
-        this.#running--;
+        this._running--;
         handler.running--;
 
         debug_run('End run job type "%s" id "%s"', job.type, job.id);
 
-        this.emit('after:run', job);
+        this.emit('afterRun', job);
       });
   }
 
@@ -451,7 +451,7 @@ class JobQueue extends EventEmitter {
 
     const runningJob = { job, cancelListeners, canceled: false, onCancel };
 
-    this.#runningJobs[job.id] = runningJob;
+    this._runningJobs[job.id] = runningJob;
 
     return runningJob;
   }
@@ -462,7 +462,7 @@ class JobQueue extends EventEmitter {
    * @private
    */
   _removeRunningJob(job) {
-    delete this.#runningJobs[job.id];
+    delete this._runningJobs[job.id];
   }
 
   /**
@@ -471,7 +471,7 @@ class JobQueue extends EventEmitter {
    * @private
    */
   _cancelRunningJob(job) {
-    const runningJob = this.#runningJobs[job.id];
+    const runningJob = this._runningJobs[job.id];
 
     if (runningJob.canceled) {
       return;
@@ -495,7 +495,7 @@ class JobQueue extends EventEmitter {
    * @private
    */
   _cancelTimedOutJobs() {
-    const runningJobs = this.#runningJobs;
+    const runningJobs = this._runningJobs;
     const keys = Object.keys(runningJobs);
 
     for (let key of keys) {
@@ -517,7 +517,7 @@ class JobQueue extends EventEmitter {
    * @private
    */
   _getHandler(type) {
-    return this.#handlers[type];
+    return this._handlers[type];
   }
 
   /**
@@ -528,7 +528,7 @@ class JobQueue extends EventEmitter {
   _getRunnableTypes() {
     const types = [];
 
-    const handlers = this.#handlers;
+    const handlers = this._handlers;
     const keys = Object.keys(handlers);
 
     for (let key of keys) {

@@ -1,12 +1,12 @@
 {
   "name": "@jjavery/oddjob-mongodb",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MongoDB plugin for @jjavery/oddjob",
   "main": "src/db.js",
   "scripts": {
     "test": "mocha"
   },
-  "author": "James P. Javery",
+  "author": "James P. Javery <james.javery@gmail.com> (https://github.com/jjavery)",
   "license": "MIT",
   "dependencies": {
     "debug": "^4.1.1",

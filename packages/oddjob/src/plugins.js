@@ -1,8 +1,8 @@
 class Plugins {
-  #plugins = {};
+  _plugins = {};
 
   get db() {
-    const { db } = this.#plugins;
+    const { db } = this._plugins;
 
     if (!db) {
       throw new NotRegisteredError('database');
@@ -24,7 +24,7 @@ class Plugins {
       plugin.init(options);
     }
 
-    this.#plugins[plugin.ODDJOB_PLUGIN_TYPE] = plugin;
+    this._plugins[plugin.ODDJOB_PLUGIN_TYPE] = plugin;
   }
 }
 
