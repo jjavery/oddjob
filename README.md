@@ -2,31 +2,33 @@
 
 A job queue for Node.js applications
 
-_Why use a job queue?_ If your application needs to reliably complete units of work without blocking request handlers or API calls, you might benefit from a job queue.
+_Why use a job queue?_ If your application needs to complete units of work outside of its main process, whether for reliability or scalability or both, it might benefit from a job queue.
 
-_Why use oddjob?_ If your stack already includes Node.js and MongoDB or one of the other supported data access layers, then oddjob might be a good fit for your solution.
+_Why use oddjob?_ If your stack already includes Node.js and MongoDB or one of the other supported databases, then oddjob might be a good fit for your project.
+
+_Why not use oddjob?_ It's beta quality! Not yet fully tested or used in production. There are many other high-quality options available.
 
 ## Features
 
-- **Distributed** - Multiple worker processes can run from the same job queue, and multiple clients can push jobs to the same job queue.
-- **Concurrency** - A worker process can run multiple jobs simultaneously.
-- **Persistence** - Jobs will run at least once (except jobs that expire prior to being run).
-- **Idempotency** - Jobs can be set to run no more than once, even if multiple clients attempt to push the same job into the queue.
-- **Recurrences** - Jobs can be set to run on multiple dates and times using cron expressions.
+- **Distributed** - Multiple workers run from the same job queue, and multiple clients push jobs to the same job queue.
+- **Concurrency** - Multiple workers run multiple jobs simultaneously.
+- **Persistence** - Jobs run at least once (unless they expire prior to being run).
+- **Idempotency** - Under most circumstances, unique jobs run no more than once, even if multiple clients push the same unique job into the queue.
+- **Recurrences** - Jobs can be scheduled to run on multiple dates and times using cron expressions.
 - **Schedule** - Jobs can be scheduled to run no sooner than a specific date and time.
 - **Expiration** - Jobs can be scheduled to run no later than a specific date and time.
-- **Delay** - Jobs can set to run after a time delay.
-- **Retries** - A failed job can be retried a limited number of times.
-- **Locking** - A job queue will lock jobs prior to running them. Jobs that do not complete prior to the lock timeout can be re-run. A worker can update a job's lock to continue to hold it past its initial timeout.
-- **Priority** - Jobs can be set to run before other jobs (that are eligible to be run).
-- **Messages** - An application-defined message can be included with each job.
+- **Delay** - Jobs can be scheduled to run after a time delay.
+- **Retries** - Failed jobs are retried a limited number of times.
+- **Locking** - Workers lock jobs prior to running them. Jobs that do not complete prior to the timeout are re-run. Workers can update a job's lock to continue to hold it past its initial timeout.
+- **Priority** - Jobs can be run before or after other jobs with the same eligiblity.
+- **Messages** - Jobs carry application-defined messages from clients to workers.
 - **Logging** - Workers can write log messages to a job's log stream.
 - **Results** - Workers can return a result to store with a job.
 - **Types** - Support for multiple job types in the same job queue.
 - **Events** - Job queues are event emitters and emit events when various actions occur.
 - **Promises** - Promise-based API (async/await).
 - **Metadata** - Jobs record the hostname &amp; PID of clients and workers, and the timing of job events.
-- **Plugins** - Pluggable data access layer for various database systems (MongoDB, SQLite, etc.)
+- **Plugins** - Pluggable data layer for various database systems (MongoDB, SQLite, etc.)
 
 ## Installation
 
@@ -46,6 +48,10 @@ You will also need a compatible database server to store your jobs, logs, result
 ```javascript
 // Get a reference to the JobQueue class
 const { JobQueue } = require('@jjavery/oddjob');
+const mongodb = require('@jjavery/oddjob-mongodb');
+
+// Only have to do this once per process
+JobQueue.use(mongodb);
 
 // A module that sends emails
 const email = require('./email');
@@ -84,6 +90,10 @@ jobQueue.start();
 ```javascript
 // Get references to the JobQueue and Job classes
 const { JobQueue, Job } = require('@jjavery/oddjob');
+const mongodb = require('@jjavery/oddjob-mongodb');
+
+// Only have to do this once per process
+JobQueue.use(mongodb);
 
 // Create an instance of a JobQueue. Connects to localhost by default.
 const jobQueue = new JobQueue();
@@ -115,7 +125,7 @@ Provides access to a job queue
 **Extends**: EventEmitter  
 
 * [JobQueue](#markdown-header-jobqueue-eventemitter) ⇐ EventEmitter
-    * [new JobQueue(options)](#markdown-header-new-jobqueueoptions)
+    * [new JobQueue(uri, options)](#markdown-header-new-jobqueueuri-options)
     * [.concurrency](#markdown-header-jobqueueconcurrency-number) : number
     * [.timeout](#markdown-header-jobqueuetimeout-number) : number
     * [.idleSleep](#markdown-header-jobqueueidlesleep-number) : number
@@ -142,15 +152,19 @@ Provides access to a job queue
     * ["afterRun"](#markdown-header-afterrun)
     * ["timeout"](#markdown-header-timeout)
 
-### new JobQueue(options)
+### new JobQueue(uri, options)
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
+| uri |  |  |  |
 | options | Object | `{}` | Optional parameters |
 | options.concurrency | number | `10` | Maximum number of jobs that may run concurrently |
 | options.timeout | number | `60` | Seconds to wait before a running job is considered timed-out and eligible for retry or failure |
 | options.idleSleep | number | `1000` | Milliseconds to sleep after completing a run loop when no jobs are acquired |
 | options.activeSleep | number | `10` | Milliseconds to sleep after completing a run loop when a job is acquired |
+| options.connect | boolean | `true` | Whether to connect to the database immediately |
+| options.workerPools | Array.<Object> |  | - |
+| options.connectOptions | Object |  | Options to pass along to the database connector |
 
 ### jobQueue.concurrency : number
 Maximum number of jobs that may run concurrently

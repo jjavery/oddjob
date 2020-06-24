@@ -1,13 +1,11 @@
-const plugins = require('./plugins');
+const dayjs = require('dayjs');
+const minMax = require('dayjs/plugin/minMax');
 const JobQueue = require('./job-queue');
 const Job = require('./job');
 
-function use(plugin, options) {
-  plugins.use(plugin, options);
-}
+dayjs.extend(minMax);
 
 module.exports = {
-  oddjob: { use },
   JobQueue,
   Job
 };
