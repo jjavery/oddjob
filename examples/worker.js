@@ -1,9 +1,9 @@
-const { oddjob, JobQueue, Job } = require('../packages/oddjob');
-const mongodb = require('../packages/oddjob-mongodb');
+const { JobQueue, Job } = require('../packages/oddjob');
 
-oddjob.use(mongodb);
-
-const jobQueue = new JobQueue({ idleSleep: 5000, timeout: 1 });
+const jobQueue = new JobQueue('mongodb://localhost', {
+  idleSleep: 5000,
+  timeout: 1
+});
 
 jobQueue.handle('test', async (job, onCancel) => {
   let canceled = false;
@@ -17,7 +17,9 @@ jobQueue.handle('test', async (job, onCancel) => {
     await wait(1000);
   }
 
-  if (canceled) { return; }
+  if (canceled) {
+    return;
+  }
 
   await job.log('test');
 
