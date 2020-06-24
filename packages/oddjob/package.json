@@ -4,22 +4,22 @@
   "description": "A job queue for Node.js applications",
   "main": "src/oddjob.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "coverage": "nyc mocha"
   },
   "author": "James P. Javery  <james.javery@gmail.com> (https://github.com/jjavery)",
   "license": "MIT",
   "dependencies": {
+    "@jjavery/worker-pool": "^0.5.0",
+    "connection-string": "^3.4.1",
     "cron-parser": "^2.15.0",
-    "debug": "^4.1.1",
-    "mongoose": "^5.9.18"
+    "dayjs": "^1.8.28",
+    "debug": "^4.1.1"
   },
   "devDependencies": {
     "chai": "^4.2.0",
-    "mocha": "^7.2.0"
-  },
-  "mocha": {
-    "recursive": true,
-    "slow": 500,
-    "require": "test/test-env.js"
+    "mocha": "^7.2.0",
+    "uuid": "^8.1.0",
+    "nyc": "^15.1.0"
   }
 }

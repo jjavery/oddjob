@@ -1,6 +1,6 @@
-const { JobQueue, Job } = require('../packages/oddjob-core');
+const { JobQueue, Job } = require('../packages/oddjob');
 
-const jobQueue = new JobQueue();
+const jobQueue = new JobQueue('mongodb://localhost');
 
 jobQueue.on('error', (err) => {
   console.log(err);

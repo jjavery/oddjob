@@ -5,6 +5,38 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "args": [
+        "--timeout",
+        "999999",
+        "--colors",
+        "${workspaceFolder}/packages/oddjob/test"
+      ],
+      "internalConsoleOptions": "openOnSessionStart",
+      "name": "oddjob Tests",
+      "program": "${workspaceFolder}/packages/oddjob/node_modules/mocha/bin/_mocha",
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "type": "pwa-node"
+    },
+    {
+      "args": [
+        "--timeout",
+        "999999",
+        "--colors",
+        "${workspaceFolder}/packages/oddjob-mongodb/test"
+      ],
+      "internalConsoleOptions": "openOnSessionStart",
+      "name": "oddjob-mongodb Tests",
+      "program": "${workspaceFolder}/packages/oddjob-mongodb/node_modules/mocha/bin/_mocha",
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "type": "pwa-node"
+    },
+    {
       "type": "node",
       "request": "launch",
       "name": "Launch Program",

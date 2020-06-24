@@ -1,8 +1,9 @@
 const os = require('os');
 const EventEmitter = require('events');
 const debug = require('debug')('oddjob');
-const date = require('./date');
-const plugins = require('./plugins');
+const { ConnectionString } = require('connection-string');
+const dayjs = require('dayjs');
+const WorkerPool = require('@jjavery/worker-pool');
 const Job = require('./job');
 
 const debug_loop = debug.extend('loop');
@@ -110,7 +111,7 @@ class JobQueue extends EventEmitter {
   _db;
   _connected = false;
   _handlers = {};
-  _timer;
+  _timer = null;
   _looping = false;
   _running = 0;
   _runningJobs = {};
@@ -132,29 +133,70 @@ class JobQueue extends EventEmitter {
   }
 
   /**
+   * @param
    * @param {Object} options={} - Optional parameters
    * @param {number} options.concurrency=10 - Maximum number of jobs that may run concurrently
    * @param {number} options.timeout=60 - Seconds to wait before a running job is considered timed-out and eligible for retry or failure
    * @param {number} options.idleSleep=1000 - Milliseconds to sleep after completing a run loop when no jobs are acquired
    * @param {number} options.activeSleep=10 - Milliseconds to sleep after completing a run loop when a job is acquired
+   * @param {boolean} options.connect=true - Whether to connect to the database immediately
+   * @param {Object[]} options.workerPools -
+   * @param {Object} options.connectOptions - Options to pass along to the database connector
    */
-  constructor({
-    concurrency = 10,
-    timeout = 60,
-    idleSleep = 1000,
-    activeSleep = 10
-  } = {}) {
+  constructor(
+    uri,
+    {
+      concurrency = 10,
+      timeout = 60,
+      idleSleep = 1000,
+      activeSleep = 10,
+      connect = true,
+      workerPools,
+      connectOptions
+    } = {}
+  ) {
     super();
 
-    this._db = plugins.db;
+    if (uri == null) {
+      throw new Error('Connection uri is required');
+    }
+
+    // Parse the connection uri,
+    const { protocol } = new ConnectionString(uri);
+
+    let Connector;
+
+    try {
+      Connector = require(`@jjavery/oddjob-${protocol}`);
+    } catch {}
+
+    if (Connector == null) {
+      try {
+        Connector = require(`oddjob-${protocol}`);
+      } catch {}
+    }
+
+    if (Connector == null) {
+      try {
+        Connector = require(`../../oddjob-${protocol}`);
+      } catch {
+        throw new Error(
+          `Couldn't find an oddjob package suitable for ${protocol}. Did you forget to install one?`
+        );
+      }
+    }
+
+    this._db = new Connector(uri, connectOptions);
     this.concurrency = concurrency;
     this.timeout = timeout;
     this.idleSleep = idleSleep;
     this.activeSleep = activeSleep;
 
-    this.connect().catch((err) => {
-      this.emit('error', err);
-    });
+    if (connect) {
+      this.connect().catch((err) => {
+        this.emit('error', err);
+      });
+    }
 
     const timer = setInterval(() => this._cancelTimedOutJobs(), 1000);
     timer.unref();
@@ -168,9 +210,9 @@ class JobQueue extends EventEmitter {
       return;
     }
 
-    await this._db.connect();
-
     this._connected = true;
+
+    await this._db.connect();
 
     debug('Connected');
 
@@ -185,9 +227,9 @@ class JobQueue extends EventEmitter {
       return;
     }
 
-    await this._db.disconnect();
-
     this._connected = false;
+
+    await this._db.disconnect();
 
     debug('Disconnected');
 
@@ -199,6 +241,8 @@ class JobQueue extends EventEmitter {
    * @param {Job} job - The job to push into the queue
    */
   async push(job) {
+    job._set_db(this._db);
+
     await job._save();
 
     debug('Pushed new job type "%s" id "%s"', job.type, job.id);
@@ -249,7 +293,9 @@ class JobQueue extends EventEmitter {
 
     this._looping = true;
 
-    this._loop();
+    this._loop().catch((err) => {
+      this.emit('error', err);
+    });
   }
 
   /**
@@ -263,6 +309,14 @@ class JobQueue extends EventEmitter {
    * Stops the job queue
    */
   stop(disconnect = true) {
+    if (disconnect) {
+      // setImmediate(() => {
+        this.disconnect().catch((err) => {
+          this.emit('error', err);
+        });
+      // });
+    }
+
     if (!this._looping) {
       return;
     }
@@ -270,6 +324,7 @@ class JobQueue extends EventEmitter {
     this._looping = false;
 
     clearTimeout(this._timer);
+    this._timer = null;
 
     if (!disconnect) {
       debug_loop('Paused looping');
@@ -279,8 +334,6 @@ class JobQueue extends EventEmitter {
       debug_loop('Stopped looping');
 
       this.emit('stop');
-
-      this.disconnect();
     }
   }
 
@@ -352,7 +405,7 @@ class JobQueue extends EventEmitter {
     debug_poll('Begin poll');
 
     // Get the future date and time when the lock will time out
-    const timeout = date.add(new Date(), this.timeout, 'seconds');
+    const timeout = dayjs().add(this.timeout, 'seconds').toDate();
 
     const data = await this._db.pollForRunnableJob(types, timeout, worker);
 
@@ -361,7 +414,7 @@ class JobQueue extends EventEmitter {
       return;
     }
 
-    const job = new Job(data);
+    const job = new Job(data, { _db: this._db });
 
     debug_poll('End poll');
 
@@ -390,8 +443,27 @@ class JobQueue extends EventEmitter {
 
     debug_run('Type "%s" Running Count: %d', job.type, handler.running);
 
-    handler
-      .fn(job, runningJob.onCancel)
+    const handlerPromise = handler.fn(job, runningJob.onCancel);
+
+    if (handlerPromise == null || typeof handlerPromise.then !== 'function') {
+      throw new Error('Handler function must return a promise');
+    }
+
+    handlerPromise
+      .catch((err) => {
+        debug_run(
+          'Error while running job type "%s" id "%s"',
+          job.type,
+          job.id
+        );
+        if (err?.message) {
+          debug_run('Error: %s', err.message);
+        }
+
+        this.emit('handlerError', err);
+
+        return job.error(err);
+      })
       .then((result) => {
         if (runningJob.canceled) {
           debug_run(
@@ -406,7 +478,7 @@ class JobQueue extends EventEmitter {
       })
       .catch((err) => {
         debug_run(
-          'Error while running job type "%s" id "%s"',
+          'Error while completing job type "%s" id "%s"',
           job.type,
           job.id
         );
@@ -414,9 +486,7 @@ class JobQueue extends EventEmitter {
           debug_run('Error: %s', err.message);
         }
 
-        this.emit('handlerError', err);
-
-        return job.error(err);
+        this.emit('error', err);
       })
       .finally(() => {
         // Remove the job from the list of currently running jobs
@@ -466,7 +536,28 @@ class JobQueue extends EventEmitter {
   }
 
   /**
-   * Cancels a currently running job by invoking any listeners its handler has added via the onCancel function
+   * Cancels any running jobs that have timed out
+   * @private
+   */
+  _cancelTimedOutJobs() {
+    const runningJobs = this._runningJobs;
+    const keys = Object.keys(runningJobs);
+
+    for (let key of keys) {
+      const { job, canceled } = runningJobs[key];
+
+      if (canceled || !job.hasTimedOut) {
+        continue;
+      }
+
+      this._cancelRunningJob(job);
+
+      this.emit('timeout', job);
+    }
+  }
+
+  /**
+   * Cancels a currently running job by calling any listeners its handler has added via the onCancel function
    * @param {Job} job - The job to cancel
    * @private
    */
@@ -488,27 +579,6 @@ class JobQueue extends EventEmitter {
     }
 
     runningJob.canceled = true;
-  }
-
-  /**
-   * Cancels any running jobs that have timed out
-   * @private
-   */
-  _cancelTimedOutJobs() {
-    const runningJobs = this._runningJobs;
-    const keys = Object.keys(runningJobs);
-
-    for (let key of keys) {
-      const { job, canceled } = runningJobs[key];
-
-      if (canceled || !job.hasTimedOut) {
-        continue;
-      }
-
-      this._cancelRunningJob(job);
-
-      this.emit('timeout', job);
-    }
   }
 
   /**

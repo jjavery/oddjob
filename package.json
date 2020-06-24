@@ -8,7 +8,7 @@
     "example": "examples"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "pushd packages/oddjob-mongodb && npm run test && popd && pushd packages/oddjob && npm run test",
     "docs": "jsdoc2md --template README.template.hbs.md --plugin @jjavery/dmd-jjavery --files packages/oddjob/src/*.js > README.md"
   },
   "author": "James P. Javery <james.javery@gmail.com> (https://github.com/jjavery)",

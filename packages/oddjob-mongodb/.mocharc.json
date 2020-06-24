@@ -1,0 +1,5 @@
+{
+  "recursive": true,
+  "slow": 500,
+  "require": "test/test-env.js"
+}

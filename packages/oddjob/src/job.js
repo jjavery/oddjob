@@ -1,8 +1,7 @@
 const os = require('os');
 const debug = require('debug')('oddjob:job');
-const date = require('./date');
-const plugins = require('./plugins');
-const getNextOccurrence = require('./get-next-occurence');
+const dayjs = require('dayjs');
+const cronParser = require('cron-parser');
 
 const client = `${os.hostname()}[${process.pid}]`;
 
@@ -161,37 +160,39 @@ class Job {
       expire,
       retries = 2,
       priority = 0,
-      delay = 0
+      delay = 0,
+      _db
     } = {}
   ) {
     if (type == null) {
       throw new Error('type is required');
     }
 
-    this._db = plugins.db;
-
     if (typeof type !== 'string' && type.id) {
       this._data = type;
+      this._db = _db;
       return;
     }
 
-    const data = this._db.createJob();
-
-    this._data = data;
+    const data = (this._data = {});
 
     data.type = type;
-    data.message = message;
-    data.unique_id = unique_id;
+    data.message = message || null;
+    data.unique_id = unique_id || null;
     data.recurring = recurring || null;
-    data.scheduled = scheduled || data.scheduled;
-    if (recurring && !scheduled) {
+    if (scheduled != null) {
+      data.scheduled = scheduled;
+    }
+    if (recurring != null && scheduled == null) {
       data.scheduled = getNextOccurrence(recurring);
     }
-    if (delay) {
-      const delay_scheduled = date.add(new Date(), delay, 'seconds');
-      data.scheduled = date.max(data.scheduled, delay_scheduled);
+    if (delay != null && delay > 0) {
+      const delay_scheduled = dayjs().add(delay, 'seconds').toDate();
+      data.scheduled = dayjs.max(data.scheduled || new Date(), delay_scheduled);
     }
-    data.expire = expire || null;
+    if (expire != null) {
+      data.expire = expire;
+    }
     data.retries = retries;
     data.priority = priority;
     data.client = client;
@@ -211,7 +212,7 @@ class Job {
     }
 
     const now = new Date();
-    const timeout = date.add(now, seconds, 'seconds');
+    const timeout = dayjs(now).add(seconds, 'seconds').toDate();
 
     const data = await this._db.updateRunningJob(job, { timeout });
 
@@ -313,7 +314,9 @@ class Job {
   async _save() {
     debug('Begin save job type "%s" id "%s"', this._data.type, this._data.id);
 
-    await this._data.save();
+    const data = await this._db.saveJob(this._data);
+
+    this._data = data;
 
     debug('End save job type "%s" id "%s"', this._data.type, this._data.id);
   }
@@ -328,7 +331,7 @@ class Job {
     }
 
     const now = new Date();
-    const _id = this._data._id;
+
     const stopwatches = {
       waiting:
         this.acquired && this.scheduled
@@ -360,7 +363,7 @@ class Job {
       });
     }
 
-    const data = await this._db.updateRunningJob(job, update);
+    const data = await this._db.updateRunningJob(this._data, update);
 
     this._data = data;
 
@@ -422,6 +425,25 @@ class Job {
 
     debug('Job type "%s" id "%s" failed', data.type, data.id);
   }
+
+  _set_db(db) {
+    this._db = db;
+  }
+}
+
+function getNextOccurrence(expression) {
+  if (recurring == null) {
+    return null;
+  }
+
+  const start = dayjs().add(1, 'minute').toDate();
+
+  const interval = cronParser.parseExpression(expression, {
+    currentDate: start
+  });
+  const next = interval.next();
+
+  return next;
 }
 
 module.exports = Job;
