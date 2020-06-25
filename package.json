@@ -8,7 +8,8 @@
     "example": "examples"
   },
   "scripts": {
-    "test": "pushd packages/oddjob-mongodb && npm run test && popd && pushd packages/oddjob && npm run test",
+    "build": "cd packages/oddjob-mongodb && npm ci && npm run build && cd ../oddjob && npm ci && npm run build",
+    "test": "cd packages/oddjob-mongodb && npm run test && cd ../oddjob && npm run test",
     "docs": "jsdoc2md --template README.template.hbs.md --plugin @jjavery/dmd-jjavery --files packages/oddjob/src/*.js > README.md"
   },
   "author": "James P. Javery <james.javery@gmail.com> (https://github.com/jjavery)",
