@@ -6,6 +6,7 @@ const db = new MongodbConnector(uri);
 
 let createdJob;
 let runningJob;
+let completedJob;
 
 describe('db', function () {
   before(async function () {
