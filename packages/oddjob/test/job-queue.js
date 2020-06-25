@@ -8,8 +8,10 @@ const type = uuid.v4();
 let newJob;
 
 describe('JobQueue', function () {
-  it('constructs a job queue', async function () {
-    new JobQueue(uri, { connect: false });
+  it('constructs a job queue', function () {
+    const jobQueue = new JobQueue(uri, { connect: false });
+
+    assert.isNotNull(jobQueue);
   });
 
   it('constructs a job', function () {
