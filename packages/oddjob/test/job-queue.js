@@ -2,7 +2,7 @@ const { assert } = require('chai');
 const uuid = require('uuid');
 const { JobQueue, Job } = require('../src/oddjob');
 
-const uri = 'mongodb://localhost:27017/test';
+const uri = 'mongodb://localhost:27017/oddjob_test';
 
 const type = uuid.v4();
 let newJob;
