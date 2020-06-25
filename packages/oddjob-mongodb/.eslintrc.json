@@ -1,0 +1,17 @@
+{
+  "env": {
+    "es2020": true,
+    "node": true
+  },
+  "extends": [
+    "babel-eslint",
+    "plugin:promise/recommended",
+    "plugin:mocha/recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 11,
+    "sourceType": "module"
+  },
+  "rules": {},
+  "plugins": ["promise", "mocha"]
+}

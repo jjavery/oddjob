@@ -1,7 +1,7 @@
 const { assert } = require('chai');
 const MongodbConnector = require('../src/mongodb-connector');
 
-const uri = 'mongodb://localhost:27017/test';
+const uri = 'mongodb://localhost:27017/oddjob_test';
 const db = new MongodbConnector(uri);
 
 let createdJob;
