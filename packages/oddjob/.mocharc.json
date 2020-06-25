@@ -1,5 +1,6 @@
 {
   "recursive": true,
   "slow": 500,
+  "timeout": 30000,
   "require": "test/test-env.js"
 }
