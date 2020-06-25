@@ -110,11 +110,12 @@ class JobQueue extends EventEmitter {
 
   _db;
   _connected = false;
-  _handlers = {};
+  _handlers = new Map();
   _timer = null;
   _looping = false;
   _running = 0;
-  _runningJobs = {};
+  _runningJobs = new Map();
+  _workers = new Map();
 
   /**
    * Number of jobs that are currently running
@@ -263,7 +264,7 @@ class JobQueue extends EventEmitter {
       options = null;
     }
 
-    if (this._handlers[type] != null) {
+    if (this._handlers.has(type)) {
       throw new Error(`A handler for type ${type} already exists`);
     }
 
@@ -271,10 +272,10 @@ class JobQueue extends EventEmitter {
 
     const handler = { type, fn, concurrency, running: 0 };
 
-    this._handlers[type] = handler;
+    this._handlers.set(type, handler);
 
     debug('Added a handler for type "%s"', type);
-    debug('Handler Count: %d', Object.keys(this._handlers).length);
+    debug('Handler Count: %d', this._handlers.length);
 
     this.emit('handle', handler);
   }
@@ -310,11 +311,9 @@ class JobQueue extends EventEmitter {
    */
   stop(disconnect = true) {
     if (disconnect) {
-      // setImmediate(() => {
-        this.disconnect().catch((err) => {
-          this.emit('error', err);
-        });
-      // });
+      this.disconnect().catch((err) => {
+        this.emit('error', err);
+      });
     }
 
     if (!this._looping) {
@@ -521,7 +520,7 @@ class JobQueue extends EventEmitter {
 
     const runningJob = { job, cancelListeners, canceled: false, onCancel };
 
-    this._runningJobs[job.id] = runningJob;
+    this._runningJobs.set(job.id, runningJob);
 
     return runningJob;
   }
@@ -532,7 +531,7 @@ class JobQueue extends EventEmitter {
    * @private
    */
   _removeRunningJob(job) {
-    delete this._runningJobs[job.id];
+    this._runningJobs.delete(job.id);
   }
 
   /**
@@ -540,12 +539,7 @@ class JobQueue extends EventEmitter {
    * @private
    */
   _cancelTimedOutJobs() {
-    const runningJobs = this._runningJobs;
-    const keys = Object.keys(runningJobs);
-
-    for (let key of keys) {
-      const { job, canceled } = runningJobs[key];
-
+    for (let [key, { job, canceled }] of this._runningJobs) {
       if (canceled || !job.hasTimedOut) {
         continue;
       }
@@ -562,7 +556,7 @@ class JobQueue extends EventEmitter {
    * @private
    */
   _cancelRunningJob(job) {
-    const runningJob = this._runningJobs[job.id];
+    const runningJob = this._runningJobs.get(job.id);
 
     if (runningJob.canceled) {
       return;
@@ -587,7 +581,7 @@ class JobQueue extends EventEmitter {
    * @private
    */
   _getHandler(type) {
-    return this._handlers[type];
+    return this._handlers.get(type);
   }
 
   /**
@@ -598,11 +592,7 @@ class JobQueue extends EventEmitter {
   _getRunnableTypes() {
     const types = [];
 
-    const handlers = this._handlers;
-    const keys = Object.keys(handlers);
-
-    for (let key of keys) {
-      const handler = handlers[key];
+    for (let [key, handler] of this._handlers) {
       if (handler.running < handler.concurrency) {
         types.push(key);
       }
