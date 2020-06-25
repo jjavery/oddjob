@@ -9,9 +9,7 @@ let newJob;
 
 describe('JobQueue', function () {
   it('constructs a job queue', async function () {
-    const jobQueue = new JobQueue(uri);
-
-    await jobQueue.disconnect();
+    new JobQueue(uri, { connect: false });
   });
 
   it('constructs a job', function () {
