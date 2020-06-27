@@ -8,15 +8,16 @@
     "example": "examples"
   },
   "scripts": {
-    "build": "cd packages/oddjob-mongodb && npm ci && npm run build && cd ../oddjob-sqlite && npm ci && npm run build && cd ../oddjob && npm ci && npm run build",
-    "test": "cd packages/oddjob-mongodb && npm run test && cd ../oddjob-sqlite && npm run test && cd ../oddjob && npm run test",
+    "build": "lerna bootstrap",
+    "test": "lerna run test --stream --no-prefix",
     "docs": "jsdoc2md --template README.template.hbs.md --plugin @jjavery/dmd-jjavery --files packages/oddjob/src/*.js > README.md && cp README.md packages/oddjob/"
   },
   "author": "James P. Javery <james.javery@gmail.com> (https://github.com/jjavery)",
   "license": "MIT",
   "devDependencies": {
     "@jjavery/dmd-jjavery": "^0.1.0",
-    "jsdoc-to-markdown": "^6.0.1"
+    "jsdoc-to-markdown": "^6.0.1",
+    "lerna": "^3.22.1"
   },
   "mochaExplorer.files": "packages/oddjob/test/**/*.js"
 }
