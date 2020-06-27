@@ -1,14 +1,8 @@
 {
-  "name": "@jjavery/oddjob-mongodb",
-  "version": "0.2.0",
-  "description": "MongoDB connector for @jjavery/oddjob",
-  "keywords": [
-    "oddjob",
-    "mongodb",
-    "job queue",
-    "task queue"
-  ],
-  "homepage": "https://github.com/jjavery/oddjob/packages/oddjob-mongodb#readme",
+  "name": "@jjavery/oddjob-sqlite",
+  "version": "0.1.0",
+  "description": "SQLite connector for @jjavery/oddjob",
+  "homepage": "https://github.com/jjavery/oddjob/packages/oddjob-sqlite#readme",
   "bugs": "https://github.com/jjavery/oddjob/issues",
   "license": "MIT",
   "author": "James P. Javery <james.javery@gmail.com> (https://github.com/jjavery)",
@@ -16,10 +10,7 @@
     "dist"
   ],
   "repository": "jjavery/oddjob",
-  "main": "dist/mongodb-connector.js",
-  "directories": {
-    "test": "test"
-  },
+  "main": "dist/sqlite-connector.js",
   "scripts": {
     "build": "babel src -d dist",
     "test": "mocha --require @babel/register",
@@ -27,8 +18,11 @@
     "prepublish": "npm run build"
   },
   "dependencies": {
+    "connection-string": "^3.4.1",
     "debug": "^4.1.1",
-    "mongodb": "^3.5.9"
+    "knex": "^0.21.1",
+    "sqlite3": "^4.2.0",
+    "uuid": "^8.2.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.10.3",
@@ -40,7 +34,7 @@
     "eslint": "^7.3.1",
     "eslint-plugin-mocha": "^7.0.1",
     "eslint-plugin-promise": "^4.2.1",
-    "mocha": "^7.2.0",
+    "mocha": "^8.0.1",
     "nyc": "^15.1.0"
   },
   "engines": {

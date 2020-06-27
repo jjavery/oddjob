@@ -37,6 +37,22 @@
       "type": "pwa-node"
     },
     {
+      "args": [
+        "--timeout",
+        "999999",
+        "--colors",
+        "${workspaceFolder}/packages/oddjob-sqlite/test"
+      ],
+      "internalConsoleOptions": "openOnSessionStart",
+      "name": "oddjob-sqlite Tests",
+      "program": "${workspaceFolder}/packages/oddjob-sqlite/node_modules/mocha/bin/_mocha",
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "type": "pwa-node"
+    },
+    {
       "type": "node",
       "request": "launch",
       "name": "Launch Program",

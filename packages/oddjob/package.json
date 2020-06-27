@@ -1,12 +1,15 @@
 {
   "name": "@jjavery/oddjob",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A job queue for Node.js applications",
   "keywords": [
     "job queue",
     "task queue",
     "message queue",
-    "worker"
+    "worker",
+    "cron",
+    "job",
+    "task"
   ],
   "homepage": "https://github.com/jjavery/oddjob#readme",
   "bugs": "https://github.com/jjavery/oddjob/issues",

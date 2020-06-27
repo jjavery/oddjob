@@ -301,14 +301,14 @@ class MongodbConnector {
     return result != null && result.insertedCount > 0 ? data : null;
   }
 
-  async readJobLog(id, skip, limit) {
+  async readJobLog(id, skip = 0, limit = 100) {
     await this.connected();
 
     const data = await this._jobLogs
       .find(
         { job_id: new ObjectId(id) },
         {
-          sort: { _id: -1 },
+          sort: { _id: 1 },
           skip,
           limit,
           projection: { _id: 0, level: 1, message: 1, created: 1 }
@@ -319,13 +319,13 @@ class MongodbConnector {
     return data;
   }
 
-  async writeJobResult(id, value) {
+  async writeJobResult(id, message) {
     await this.connected();
     await this.ensureIndexes();
 
     const data = {
       _id: new ObjectId(id),
-      value,
+      message,
       created: new Date()
     };
 

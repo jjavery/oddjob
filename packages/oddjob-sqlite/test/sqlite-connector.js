@@ -1,8 +1,8 @@
 const { assert } = require('chai');
-const MongodbConnector = require('../src/mongodb-connector');
+const SqliteConnector = require('../src/sqlite-connector');
 
-const uri = 'mongodb://localhost:27017/oddjob_test';
-const db = new MongodbConnector(uri);
+const uri = `sqlite://${__dirname}/oddjob_test.db`;
+const db = new SqliteConnector(uri);
 
 let createdJob;
 let runningJob;
@@ -57,30 +57,34 @@ describe('db', function () {
   });
 
   it('updates a running job', async function () {
+    const now = new Date();
+
     const job = completedJob = await db.updateRunningJob(runningJob, {
       timeout: null,
-      modified: new Date(1),
+      modified: now,
       status: 'completed',
-      completed: new Date(1)
+      completed: now
     });
 
     assert.isObject(job);
     assert.isString(job.id);
     assert.isNull(job.timeout);
-    assert.equal(job.modified.getTime(), 1);
+    assert.equal(job.modified.getTime(), now.getTime());
     assert.equal(job.status, 'completed');
-    assert.equal(job.completed.getTime(), 1);
+    assert.equal(job.completed.getTime(), now.getTime());
   });
 
   it('updates a job based on id', async function () {
+    const now = new Date();
+
     const job = await db.updateJobById(completedJob.id, {
-      timeout: new Date(2)
+      timeout: now
     });
 
     assert.isObject(job);
     assert.isString(job.id);
     assert.equal(job.status, 'completed');
-    assert.equal(job.timeout.getTime(), 2);
+    assert.equal(job.timeout.getTime(), now.getTime());
   });
 
   it('writes a job log message', async function () {
