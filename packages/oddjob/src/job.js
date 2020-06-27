@@ -432,7 +432,7 @@ class Job {
 }
 
 function getNextOccurrence(expression) {
-  if (recurring == null) {
+  if (expression == null) {
     return null;
   }
 
