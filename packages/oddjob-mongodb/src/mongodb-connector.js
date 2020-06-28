@@ -1,4 +1,5 @@
 const { MongoClient, ObjectId } = require('mongodb');
+// const { Logger } = require('mongodb');
 const debug = require('debug')('oddjob:mongodb');
 
 class MongodbConnector {
@@ -68,6 +69,8 @@ class MongodbConnector {
 
     this._connecting = null;
 
+    // Logger.setLevel('debug');
+
     const db = this._client.db();
 
     this._jobsCollection = db.collection(this._jobsCollectionName);
@@ -100,16 +103,20 @@ class MongodbConnector {
       this._jobs.createIndex({ unique_id: 1 }, { unique: true, sparse: true }),
       this._jobs.createIndex({
         status: 1,
+        type: 1,
+        priority: 1,
+        created: 1,
         scheduled: 1,
         timeout: 1,
-        priority: 1,
-        created: 1
+        recurring: 1
       }),
       this._jobs.createIndex({ type: 1, created: 1 }),
       this._jobs.createIndex({ created: 1 }),
       this._jobs.createIndex({ completed: 1 }, { expireAfterSeconds: 86400 }),
+
       this._jobLogs.createIndex({ job_id: 1 }),
       this._jobLogs.createIndex({ created: 1 }, { expireAfterSeconds: 86400 }),
+
       this._jobResults.createIndex(
         { created: 1 },
         { expireAfterSeconds: 86400 }
@@ -199,28 +206,23 @@ class MongodbConnector {
     const now = new Date();
 
     const query = {
-      type: {
-        $in: types
-      },
+      status: { $in: ['waiting', 'running', 'failed'] },
+      type: { $in: types },
+      scheduled: { $lte: now },
       $or: [
         // waiting and scheduled to run
         {
-          status: 'waiting',
-          scheduled: { $lte: now },
-          timeout: null
+          status: 'waiting'
         },
         // was running and lock timed out
         {
           status: 'running',
-          scheduled: { $lte: now },
           timeout: { $lte: now }
         },
         // recurring and failed
         {
-          recurring: { $ne: null },
           status: 'failed',
-          scheduled: { $lte: now },
-          timeout: null
+          recurring: { $ne: null }
         }
       ]
     };
@@ -242,7 +244,7 @@ class MongodbConnector {
 
     const { value: data } = await this._jobs.findOneAndUpdate(query, update, {
       sort: {
-        priority: -1,
+        priority: 1,
         created: 1
       },
       returnOriginal: false

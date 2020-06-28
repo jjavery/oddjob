@@ -177,7 +177,7 @@ class Job {
     const data = (this._data = {});
 
     data.type = type;
-    data.message = message || null;
+    data.message = message != null ? message : null;
     data.unique_id = unique_id || null;
     data.recurring = recurring || null;
     if (scheduled != null) {
