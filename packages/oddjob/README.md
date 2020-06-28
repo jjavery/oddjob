@@ -48,21 +48,17 @@ You will also need a compatible database server to store your jobs, logs, result
 ```javascript
 // Get a reference to the JobQueue class
 const { JobQueue } = require('@jjavery/oddjob');
-const mongodb = require('@jjavery/oddjob-mongodb');
-
-// Only have to do this once per process
-JobQueue.use(mongodb);
 
 // A module that sends emails
 const email = require('./email');
 
-// Create an instance of a JobQueue. Connects to localhost by default.
-const jobQueue = new JobQueue();
+// Create an instance of a JobQueue
+const jobQueue = new JobQueue('mongodb://localhost:27017/oddjob');
 
 // Tell the JobQueue to handle jobs of type 'send-email' with the provided
 // async function. Concurrency is set to handle up to four jobs of this type
 // simultaneously.
-jobQueue.handle('send-email', { concurrency: 4 }, async (job) => {
+jobQueue.handle('send-email', { concurrency: 4 }, async (job, onCancel) => {
   const { message } = job;
 
   // Send the email. If an exception is thrown, it will be written to the job
@@ -78,7 +74,7 @@ jobQueue.handle('send-email', { concurrency: 4 }, async (job) => {
 
 // Handle errors
 jobQueue.on('error', (err) => {
-  console.log(err);
+  console.error(err);
 });
 
 // Start the JobQueue
@@ -90,15 +86,11 @@ jobQueue.start();
 ```javascript
 // Get references to the JobQueue and Job classes
 const { JobQueue, Job } = require('@jjavery/oddjob');
-const mongodb = require('@jjavery/oddjob-mongodb');
-
-// Only have to do this once per process
-JobQueue.use(mongodb);
 
 // Create an instance of a JobQueue. Connects to localhost by default.
-const jobQueue = new JobQueue();
+const jobQueue = new JobQueue('mongodb://localhost:27017/oddjob');
 
-(async () => {
+async function sendEmail() {
   // Push a new Job into the JobQueue
   await jobQueue.push(
     new Job('send-email', {
@@ -110,10 +102,12 @@ const jobQueue = new JobQueue();
       }
     })
   );
+}
 
+async function disconnect() {
   // Disconnect from the database
   await jobQueue.disconnect();
-})();
+}
 ```
 
 # API Reference

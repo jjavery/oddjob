@@ -87,7 +87,7 @@ class SqliteConnector {
         table.string('unique_id', 256);
         table.string('client', 256);
         table.string('worker', 256);
-        table.string('recurring', 4096);
+        table.string('recurring', 256);
         table.string('timezone', 32).defaultTo('UTC');
         table.string('status', 16).defaultTo('waiting');
         table.integer('retries').defaultTo(3);
@@ -103,7 +103,15 @@ class SqliteConnector {
         table.dateTime('created').notNullable();
         table.dateTime('modified').notNullable();
         table.unique(['unique_id']);
-        table.index(['status', 'scheduled', 'timeout', 'priority', 'created']);
+        table.index([
+          'status',
+          'type',
+          'priority',
+          'created',
+          'scheduled',
+          'timeout',
+          'recurring'
+        ]);
         table.index(['type', 'created']);
         table.index(['created']);
         table.index(['completed']);
@@ -239,31 +247,25 @@ class SqliteConnector {
     const now = new Date();
 
     const query = (query) => {
-      query.whereIn('type', types).where((query) => {
-        query
-          // waiting and scheduled to run
-          .where((query) => {
-            query
-              .where('status', 'waiting')
-              .where('scheduled', '<=', now)
-              .whereNull('timeout');
-          })
-          // was running and lock timed out
-          .orWhere((query) => {
-            query
-              .where('status', 'running')
-              .where('scheduled', '<=', now)
-              .where('timeout', '<=', now);
-          })
-          // recurring and failed
-          .orWhere((query) => {
-            query
-              .whereNotNull('recurring')
-              .where('status', 'failed')
-              .where('scheduled', '<=', now)
-              .whereNull('timeout');
-          });
-      });
+      query
+        .whereIn('type', types)
+        .whereIn('status', ['waiting', 'running', 'failed'])
+        .where('scheduled', '<=', now)
+        .where((query) => {
+          query
+            // waiting and scheduled to run
+            .where((query) => {
+              query.where('status', 'waiting');
+            })
+            // was running and lock timed out
+            .orWhere((query) => {
+              query.where('status', 'running').where('timeout', '<=', now);
+            })
+            // recurring and failed
+            .orWhere((query) => {
+              query.where('status', 'failed').whereNotNull('recurring');
+            });
+        });
     };
 
     const update = {
@@ -283,7 +285,7 @@ class SqliteConnector {
     const result = await client(jobsTableName)
       .where(query)
       .orderBy([
-        { column: 'priority', order: 'desc' },
+        { column: 'priority', order: 'asc' },
         { column: 'created', order: 'asc' }
       ])
       .limit(1);

@@ -59,7 +59,7 @@
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "program": "${workspaceFolder}/examples/worker.js"
+      "program": "${workspaceFolder}/examples/10k/10k.js"
     }
   ]
 }
