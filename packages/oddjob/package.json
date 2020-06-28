@@ -1,6 +1,6 @@
 {
   "name": "@jjavery/oddjob",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "A job queue for Node.js applications",
   "keywords": [
     "job queue",
