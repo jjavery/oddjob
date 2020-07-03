@@ -62,7 +62,21 @@ class MongodbConnector {
     let connecting = this._connecting;
 
     if (connecting == null) {
-      connecting = this._connecting = this._client.connect();
+      const _connect = async () => {
+        await this._client.connect();
+
+        const db = this._client.db();
+
+        this._jobsCollection = db.collection(this._jobsCollectionName);
+        this._jobLogsCollection = db.collection(this._jobLogsCollectionName);
+        this._jobResultsCollection = db.collection(
+          this._jobResultsCollectionName
+        );
+
+        await this.ensureIndexes();
+      };
+
+      connecting = this._connecting = _connect();
     }
 
     await connecting;
@@ -70,12 +84,6 @@ class MongodbConnector {
     this._connecting = null;
 
     // Logger.setLevel('debug');
-
-    const db = this._client.db();
-
-    this._jobsCollection = db.collection(this._jobsCollectionName);
-    this._jobLogsCollection = db.collection(this._jobLogsCollectionName);
-    this._jobResultsCollection = db.collection(this._jobResultsCollectionName);
   }
 
   async connected() {
@@ -147,7 +155,6 @@ class MongodbConnector {
 
   async saveJob(job) {
     await this.connected();
-    await this.ensureIndexes();
 
     if (job.id == null) {
       job = this.createJob(job);
@@ -288,7 +295,6 @@ class MongodbConnector {
 
   async writeJobLog(id, level, message) {
     await this.connected();
-    await this.ensureIndexes();
 
     const data = {
       _id: new ObjectId(),
@@ -323,7 +329,6 @@ class MongodbConnector {
 
   async writeJobResult(id, message) {
     await this.connected();
-    await this.ensureIndexes();
 
     const data = {
       _id: new ObjectId(id),
