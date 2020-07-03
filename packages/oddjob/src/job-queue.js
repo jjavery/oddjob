@@ -1,7 +1,6 @@
 const os = require('os');
 const EventEmitter = require('events');
 const debug = require('debug')('oddjob');
-const { ConnectionString } = require('connection-string');
 const dayjs = require('dayjs');
 const WorkerPool = require('@jjavery/worker-pool');
 const Job = require('./job');
@@ -159,11 +158,17 @@ class JobQueue extends EventEmitter {
     super();
 
     if (uri == null) {
-      throw new Error('Connection uri is required');
+      throw new Error('Connection URI is required');
     }
 
     // Parse the connection uri,
-    const { protocol } = new ConnectionString(uri);
+    const matches = uri.match(/^[^:]+/);
+
+    if (matches.length !== 1) {
+      throw new Error('Invalid connection URI');
+    }
+
+    const protocol = matches[0];
 
     let Connector;
 
@@ -388,10 +393,14 @@ class JobQueue extends EventEmitter {
 
     debug_loop('End loop');
 
-    debug_loop('Sleeping for %dms', sleep);
+    if (sleep === 0) {
+      setImmediate(() => this._loop());
+    } else {
+      debug_loop('Sleeping for %dms', sleep);
 
-    // Keep a reference to the timer so it can be canceled with .pause() or .stop()
-    this._timer = setTimeout(this._loop.bind(this), sleep);
+      // Keep a reference to the timer so it can be canceled with .pause() or .stop()
+      this._timer = setTimeout(() => this._loop(), sleep);
+    }
   }
 
   /**
