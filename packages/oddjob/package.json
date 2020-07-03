@@ -31,7 +31,6 @@
   },
   "dependencies": {
     "@jjavery/worker-pool": "^0.5.0",
-    "connection-string": "^3.4.1",
     "cron-parser": "^2.15.0",
     "dayjs": "^1.8.28",
     "debug": "^4.1.1"
