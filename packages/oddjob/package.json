@@ -1,6 +1,6 @@
 {
   "name": "@jjavery/oddjob",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "A job queue for Node.js applications",
   "keywords": [
     "job queue",
@@ -30,24 +30,24 @@
     "prepublish": "npm run build"
   },
   "dependencies": {
-    "@jjavery/worker-pool": "^0.5.0",
-    "cron-parser": "^2.15.0",
-    "dayjs": "^1.8.28",
-    "debug": "^4.1.1"
+    "@jjavery/worker-pool": "^0.6.0",
+    "cron-parser": "^2.18.0",
+    "dayjs": "^1.9.7",
+    "debug": "^4.3.1"
   },
   "devDependencies": {
-    "@babel/cli": "^7.10.3",
-    "@babel/core": "^7.10.3",
-    "@babel/preset-env": "^7.10.3",
-    "@babel/register": "^7.10.3",
+    "@babel/cli": "^7.12.10",
+    "@babel/core": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
+    "@babel/register": "^7.12.10",
     "babel-eslint": "^10.1.0",
     "chai": "^4.2.0",
-    "eslint": "^7.3.1",
-    "eslint-plugin-mocha": "^7.0.1",
+    "eslint": "^7.15.0",
+    "eslint-plugin-mocha": "^8.0.0",
     "eslint-plugin-promise": "^4.2.1",
-    "mocha": "^7.2.0",
+    "mocha": "^8.2.1",
     "nyc": "^15.1.0",
-    "uuid": "^8.1.0"
+    "uuid": "^8.3.2"
   },
   "engines": {
     "node": ">=10.0.0"
