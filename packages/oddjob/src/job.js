@@ -140,8 +140,8 @@ class Job {
 
   /**
    * @param {string} type - The job type
+   * @param {any} message - Application-defined message to pass to the job handler
    * @param {Object} options={} - Optional parameters
-   * @param {any} options.message - Application-defined message to pass to the job handler
    * @param {string} options.unique_id - Unique ID of the job
    * @param {string} options.recurring - Cron expression
    * @param {Date} options.scheduled=now - Date and time after which the job will run
@@ -152,8 +152,8 @@ class Job {
    */
   constructor(
     type,
+    message,
     {
-      message,
       unique_id,
       recurring,
       scheduled,

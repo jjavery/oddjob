@@ -94,12 +94,10 @@ async function sendEmail() {
   // Push a new Job into the JobQueue
   await jobQueue.push(
     new Job('send-email', {
-      message: {
-        from: 'someone@example.com',
-        to: 'someoneelse@example.com',
-        subject: 'This is an example',
-        text: 'Hi Someone, How do you like my example? -Someone Else'
-      }
+      from: 'someone@example.com',
+      to: 'someoneelse@example.com',
+      subject: 'This is an example',
+      text: 'Hi Someone, How do you like my example? -Someone Else'
     })
   );
 }
@@ -253,7 +251,7 @@ Provides access to the properties and methods needed to define a job
 
 
 * [Job](#markdown-header-job)
-    * [new Job(type, options)](#markdown-header-new-jobtype-options)
+    * [new Job(type, message, options)](#markdown-header-new-jobtype-message-options)
     * _instance_
         * [.id](#markdown-header-jobid-string) : string
         * [.type](#markdown-header-jobtype-string) : string
@@ -282,13 +280,13 @@ Provides access to the properties and methods needed to define a job
     * _static_
         * [.load(id)](#markdown-header-jobloadid-job) ⇒ Job
 
-### new Job(type, options)
+### new Job(type, message, options)
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
 | type | string |  | The job type |
+| message | any |  | Application-defined message to pass to the job handler |
 | options | Object | `{}` | Optional parameters |
-| options.message | any |  | Application-defined message to pass to the job handler |
 | options.unique_id | string |  | Unique ID of the job |
 | options.recurring | string |  | Cron expression |
 | options.scheduled | Date | `now` | Date and time after which the job will run |

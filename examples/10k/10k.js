@@ -18,7 +18,7 @@ jobQueue.on('error', (err) => {
 });
 
 for (let i = 0; i < 10000; ++i) {
-  jobQueue.push(new Job('10k', { message: i })).catch((err) => {
+  jobQueue.push(new Job('10k', i)).catch((err) => {
     console.error(err);
   });
 }

@@ -6,7 +6,7 @@ const jobQueue = new JobQueue('mongodb://localhost:27017/oddjob_examples');
 
 async function sendEmail(message) {
   // Push a new Job into the JobQueue
-  await jobQueue.push(new Job('send-email', { message }));
+  await jobQueue.push(new Job('send-email', message));
 }
 
 async function disconnect() {
