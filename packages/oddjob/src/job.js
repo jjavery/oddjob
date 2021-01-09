@@ -188,7 +188,7 @@ class Job {
     }
     if (delay != null && delay > 0) {
       const delay_scheduled = dayjs().add(delay, 'seconds').toDate();
-      data.scheduled = dayjs.max(data.scheduled || new Date(), delay_scheduled);
+      data.scheduled = dayjs.max(data.scheduled || new Date(), delay_scheduled).toDate();
     }
     if (expire != null) {
       data.expire = expire;
@@ -436,14 +436,11 @@ function getNextOccurrence(expression) {
     return null;
   }
 
-  const start = dayjs().add(1, 'minute').toDate();
+  const currentDate = new Date();
 
-  const interval = cronParser.parseExpression(expression, {
-    currentDate: start
-  });
-  const next = interval.next();
+  const interval = cronParser.parseExpression(expression, { currentDate });
 
-  return next;
+  return interval.next().toDate();
 }
 
 module.exports = Job;
