@@ -1,6 +1,6 @@
 {
   "name": "@jjavery/oddjob",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "A job queue for Node.js applications",
   "keywords": [
     "job queue",
@@ -30,9 +30,8 @@
     "prepublish": "npm run build"
   },
   "dependencies": {
-    "@jjavery/worker-pool": "^0.6.0",
     "cron-parser": "^2.18.0",
-    "dayjs": "^1.9.7",
+    "dayjs": "^1.10.2",
     "debug": "^4.3.1"
   },
   "devDependencies": {
@@ -42,7 +41,7 @@
     "@babel/register": "^7.12.10",
     "babel-eslint": "^10.1.0",
     "chai": "^4.2.0",
-    "eslint": "^7.15.0",
+    "eslint": "^7.17.0",
     "eslint-plugin-mocha": "^8.0.0",
     "eslint-plugin-promise": "^4.2.1",
     "mocha": "^8.2.1",

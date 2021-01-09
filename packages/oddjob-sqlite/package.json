@@ -1,6 +1,6 @@
 {
   "name": "@jjavery/oddjob-sqlite",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "SQLite connector for @jjavery/oddjob",
   "homepage": "https://github.com/jjavery/oddjob/packages/oddjob-sqlite#readme",
   "bugs": "https://github.com/jjavery/oddjob/issues",
@@ -18,10 +18,10 @@
     "prepublish": "npm run build"
   },
   "dependencies": {
-    "connection-string": "^4.3.1",
+    "connection-string": "^4.3.2",
     "debug": "^4.3.1",
-    "knex": "^0.21.13",
-    "sqlite3": "^5.0.0",
+    "knex": "^0.21.15",
+    "sqlite3": "^5.0.1",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
@@ -31,7 +31,7 @@
     "@babel/register": "^7.12.10",
     "babel-eslint": "^10.1.0",
     "chai": "^4.2.0",
-    "eslint": "^7.15.0",
+    "eslint": "^7.17.0",
     "eslint-plugin-mocha": "^8.0.0",
     "eslint-plugin-promise": "^4.2.1",
     "mocha": "^8.2.1",
