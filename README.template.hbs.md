@@ -94,12 +94,10 @@ async function sendEmail() {
   // Push a new Job into the JobQueue
   await jobQueue.push(
     new Job('send-email', {
-      message: {
-        from: 'someone@example.com',
-        to: 'someoneelse@example.com',
-        subject: 'This is an example',
-        text: 'Hi Someone, How do you like my example? -Someone Else'
-      }
+      from: 'someone@example.com',
+      to: 'someoneelse@example.com',
+      subject: 'This is an example',
+      text: 'Hi Someone, How do you like my example? -Someone Else'
     })
   );
 }

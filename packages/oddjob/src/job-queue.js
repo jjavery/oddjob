@@ -421,7 +421,7 @@ class JobQueue extends EventEmitter {
       return;
     }
 
-    const job = new Job(data, { _db: this._db });
+    const job = new Job(data, null, { _db: this._db });
 
     debug_poll('End poll');
 
