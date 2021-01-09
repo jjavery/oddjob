@@ -2,7 +2,6 @@ const os = require('os');
 const EventEmitter = require('events');
 const debug = require('debug')('oddjob');
 const dayjs = require('dayjs');
-const WorkerPool = require('@jjavery/worker-pool');
 const Job = require('./job');
 
 const debug_loop = debug.extend('loop');

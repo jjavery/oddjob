@@ -1,6 +1,6 @@
 {
   "name": "@jjavery/oddjob-mongodb",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "MongoDB connector for @jjavery/oddjob",
   "keywords": [
     "oddjob",
@@ -37,7 +37,7 @@
     "@babel/register": "^7.12.10",
     "babel-eslint": "^10.1.0",
     "chai": "^4.2.0",
-    "eslint": "^7.15.0",
+    "eslint": "^7.17.0",
     "eslint-plugin-mocha": "^8.0.0",
     "eslint-plugin-promise": "^4.2.1",
     "mocha": "^8.2.1",

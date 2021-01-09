@@ -13,7 +13,7 @@ class SqliteConnector {
   _schemaCreated = false;
 
   constructor(uri, options = {}) {
-    options = Object.assign({}, options);
+    options = { ...options };
 
     const {
       jobsTableName = 'jobs',
@@ -152,20 +152,18 @@ class SqliteConnector {
   createJob(data = {}) {
     const now = new Date();
 
-    const job = Object.assign(
-      {
-        id: uuid.v4(),
-        timezone: 'UTC',
-        status: 'waiting',
-        retries: 3,
-        try: 0,
-        priority: 0,
-        scheduled: now,
-        created: now,
-        modified: now
-      },
-      data
-    );
+    const job = {
+      id: uuid.v4(),
+      timezone: 'UTC',
+      status: 'waiting',
+      retries: 3,
+      try: 0,
+      priority: 0,
+      scheduled: now,
+      created: now,
+      modified: now,
+      ...data
+    };
 
     return job;
   }
@@ -184,9 +182,17 @@ class SqliteConnector {
     const client = this._client;
     const jobsTableName = this._jobsTableName;
 
-    await client(jobsTableName).insert(job);
+    try {
+      await client(jobsTableName).insert(job);
+    } catch (err) {
+      // Silently ignore unique constraint errors
+      if (err != null && err.errno === 19) {
+      } else {
+        throw err;
+      }
+    }
 
-    const data = Object.assign({}, job);
+    const data = { ...job };
 
     return data;
   }

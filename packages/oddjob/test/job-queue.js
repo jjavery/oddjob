@@ -36,6 +36,19 @@ for (let [connector, uri] of Object.entries(connectionStrings)) {
       }
     });
 
+    it('pushes a unique job into a job queue twice', async function () {
+      const jobQueue = new JobQueue(uri);
+
+      try {
+        await jobQueue.push(newJob);
+        await jobQueue.push(newJob);
+      } catch (err) {
+        throw err;
+      } finally {
+        await jobQueue.disconnect();
+      }
+    });
+
     it('starts, pauses, and stops a job queue', async function () {
       const jobQueue = new JobQueue(uri);
 

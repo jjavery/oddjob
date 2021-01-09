@@ -39,7 +39,7 @@ class MongodbConnector {
   }
 
   constructor(uri, options = {}) {
-    options = Object.assign({ useUnifiedTopology: true }, options);
+    options = { useUnifiedTopology: true, ...options };
 
     const {
       jobsCollectionName = 'jobs',
@@ -135,20 +135,18 @@ class MongodbConnector {
   createJob(data = {}) {
     const now = new Date();
 
-    const job = Object.assign(
-      {
-        id: new ObjectId().toHexString(),
-        timezone: 'UTC',
-        status: 'waiting',
-        retries: 3,
-        try: 0,
-        priority: 0,
-        scheduled: now,
-        created: now,
-        modified: now
-      },
-      data
-    );
+    const job = {
+      id: new ObjectId().toHexString(),
+      timezone: 'UTC',
+      status: 'waiting',
+      retries: 3,
+      try: 0,
+      priority: 0,
+      scheduled: now,
+      created: now,
+      modified: now,
+      ...data
+    };
 
     return job;
   }
@@ -164,11 +162,24 @@ class MongodbConnector {
       delete job.unique_id;
     }
 
-    const { value: data } = await this._jobs.findOneAndUpdate(
-      { _id: new ObjectId(job.id) },
-      { $set: job },
-      { upsert: true, returnOriginal: false }
-    );
+    const $set = { ...job };
+    delete $set.id;
+
+    try {
+      await this._jobs.findOneAndUpdate(
+        { _id: new ObjectId(job.id) },
+        { $set },
+        { upsert: true, returnOriginal: false }
+      );
+    } catch (err) {
+      // Silently ignore duplicate key errors
+      if (err != null && err.code === 11000) {
+      } else {
+        throw err;
+      }
+    }
+
+    const data = { ...job };
 
     initialize(data);
 
