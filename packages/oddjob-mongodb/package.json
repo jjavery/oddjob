@@ -24,7 +24,7 @@
     "build": "babel src -d dist",
     "test": "mocha --require @babel/register",
     "coverage": "nyc mocha",
-    "prepublishOnly": "npm run build"
+    "prepare": "npm run build"
   },
   "dependencies": {
     "debug": "^4.3.1",
