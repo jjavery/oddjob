@@ -188,7 +188,9 @@ class Job {
     }
     if (delay != null && delay > 0) {
       const delay_scheduled = dayjs().add(delay, 'seconds').toDate();
-      data.scheduled = dayjs.max(data.scheduled || new Date(), delay_scheduled).toDate();
+      data.scheduled = dayjs
+        .max(data.scheduled || new Date(), delay_scheduled)
+        .toDate();
     }
     if (expire != null) {
       data.expire = expire;

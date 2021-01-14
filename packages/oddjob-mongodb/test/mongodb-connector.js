@@ -57,12 +57,12 @@ describe('db', function () {
   });
 
   it('updates a running job', async function () {
-    const job = completedJob = await db.updateRunningJob(runningJob, {
+    const job = (completedJob = await db.updateRunningJob(runningJob, {
       timeout: null,
       modified: new Date(1),
       status: 'completed',
       completed: new Date(1)
-    });
+    }));
 
     assert.isObject(job);
     assert.isString(job.id);
