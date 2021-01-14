@@ -1,6 +1,6 @@
 {
   "name": "@jjavery/oddjob-sqlite",
-  "version": "0.7.0",
+  "version": "0.9.0",
   "description": "SQLite connector for @jjavery/oddjob",
   "homepage": "https://github.com/jjavery/oddjob/packages/oddjob-sqlite#readme",
   "bugs": "https://github.com/jjavery/oddjob/issues",
@@ -15,7 +15,7 @@
     "build": "babel src -d dist",
     "test": "mocha --require @babel/register",
     "coverage": "nyc mocha",
-    "prepublish": "npm run build"
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "connection-string": "^4.3.2",

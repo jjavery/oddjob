@@ -1,6 +1,6 @@
 {
   "name": "@jjavery/oddjob",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "A job queue for Node.js applications",
   "keywords": [
     "job queue",
@@ -27,11 +27,11 @@
     "build": "babel src -d dist",
     "test": "mocha --require @babel/register",
     "coverage": "nyc mocha",
-    "prepublish": "npm run build"
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "cron-parser": "^2.18.0",
-    "dayjs": "^1.10.2",
+    "cron-parser": "^3.1.0",
+    "dayjs": "^1.10.3",
     "debug": "^4.3.1"
   },
   "devDependencies": {
