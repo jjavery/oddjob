@@ -1,6 +1,6 @@
 {
   "name": "@jjavery/oddjob-mongodb",
-  "version": "0.7.0",
+  "version": "0.9.0",
   "description": "MongoDB connector for @jjavery/oddjob",
   "keywords": [
     "oddjob",
@@ -24,7 +24,7 @@
     "build": "babel src -d dist",
     "test": "mocha --require @babel/register",
     "coverage": "nyc mocha",
-    "prepublish": "npm run build"
+    "prepare": "npm run build"
   },
   "dependencies": {
     "debug": "^4.3.1",

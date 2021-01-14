@@ -139,7 +139,6 @@ class JobQueue extends EventEmitter {
    * @param {number} options.idleSleep=1000 - Milliseconds to sleep after completing a run loop when no jobs are acquired
    * @param {number} options.activeSleep=10 - Milliseconds to sleep after completing a run loop when a job is acquired
    * @param {boolean} options.connect=true - Whether to connect to the database immediately
-   * @param {Object[]} options.workerPools -
    * @param {Object} options.connectOptions - Options to pass along to the database connector
    */
   constructor(
@@ -150,7 +149,6 @@ class JobQueue extends EventEmitter {
       idleSleep = 1000,
       activeSleep = 10,
       connect = true,
-      workerPools,
       connectOptions
     } = {}
   ) {
@@ -253,6 +251,17 @@ class JobQueue extends EventEmitter {
     debug('Pushed new job type "%s" id "%s"', job.type, job.id);
 
     this.emit('push', job);
+  }
+
+  /**
+   * Creates a proxy function that will push a new job when called
+   */
+  proxy(type, defaultOptions = {}) {
+    return async (message, options = {}) => {
+      const job = new Job(type, message, { ...defaultOptions, ...options });
+
+      await this.push(job);
+    };
   }
 
   /**
