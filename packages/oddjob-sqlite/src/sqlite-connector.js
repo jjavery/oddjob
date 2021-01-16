@@ -175,18 +175,14 @@ class SqliteConnector {
       job = this.createJob(job);
     }
 
-    // if (job.unique_id == null) {
-    //   delete job.unique_id;
-    // }
-
     const client = this._client;
     const jobsTableName = this._jobsTableName;
 
     try {
       await client(jobsTableName).insert(job);
     } catch (err) {
-      // Silently ignore unique constraint errors
       if (err != null && err.errno === 19) {
+        throw new Error('duplicate-key');
       } else {
         throw err;
       }
@@ -356,10 +352,6 @@ class SqliteConnector {
 
   async updateRunningJob({ id, acquired, timeout }, update) {
     await this.connected();
-
-    // if (update.unique_id == null) {
-    //   delete update.unique_id;
-    // }
 
     const query = (query) => {
       query

@@ -314,13 +314,25 @@ class Job {
   }
 
   async _save() {
+    let saved = true;
+
     debug('Begin save job type "%s" id "%s"', this._data.type, this._data.id);
 
-    const data = await this._db.saveJob(this._data);
+    try {
+      const data = await this._db.saveJob(this._data);
 
-    this._data = data;
+      this._data = data;
+    } catch (err) {
+      if (err.message === 'duplicate-key') {
+        saved = false;
+      } else {
+        throw err;
+      }
+    }
 
     debug('End save job type "%s" id "%s"', this._data.type, this._data.id);
+
+    return saved;
   }
 
   async _complete(result) {

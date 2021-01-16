@@ -172,8 +172,8 @@ class MongodbConnector {
         { upsert: true, returnOriginal: false }
       );
     } catch (err) {
-      // Silently ignore duplicate key errors
       if (err != null && err.code === 11000) {
+        throw new Error('duplicate-key');
       } else {
         throw err;
       }

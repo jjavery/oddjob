@@ -45,8 +45,11 @@ for (let [connector, uri] of Object.entries(connectionStrings)) {
       const job2 = new Job(type, {}, { unique_id });
 
       try {
-        await jobQueue.push(job1);
-        await jobQueue.push(job2);
+        const pushed1 = await jobQueue.push(job1);
+        const pushed2 = await jobQueue.push(job2);
+
+        assert.isTrue(pushed1);
+        assert.isFalse(pushed2);
       } catch (err) {
         throw err;
       } finally {

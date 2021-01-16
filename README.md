@@ -126,7 +126,7 @@ Provides access to a job queue
     * [.isSaturated](#markdown-header-jobqueueissaturated-boolean) : boolean
     * [.connect()](#markdown-header-jobqueueconnect)
     * [.disconnect()](#markdown-header-jobqueuedisconnect)
-    * [.push(job)](#markdown-header-jobqueuepushjob)
+    * [.push(job)](#markdown-header-jobqueuepushjob-boolean) ⇒ boolean
     * [.proxy(type, defaultOptions)](#markdown-header-jobqueueproxytype-defaultoptions-function) ⇒ function
     * [.cancel(options)](#markdown-header-jobqueuecanceloptions-job) ⇒ Job
     * [.handle(type, options, fn)](#markdown-header-jobqueuehandletype-options-fn)
@@ -183,9 +183,10 @@ Establish a connection to the database server
 ### jobQueue.disconnect()
 Disconnect from the database server
 
-### jobQueue.push(job)
+### jobQueue.push(job) ⇒ boolean
 Push a job into the job queue
 
+**Returns**: boolean - - Returns true if a new job was pushed, or false if the job already exists (based on id or unique_id)  
 
 | Param | Type | Description |
 | --- | --- | --- |
