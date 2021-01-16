@@ -255,6 +255,9 @@ class JobQueue extends EventEmitter {
 
   /**
    * Creates a proxy function that will push a new job when called
+   * @param {string} type - The job type. Only jobs of this type will be passed to the handle function.
+   * @param {Object} defaultOptions={} - Optional parameters sent to each Job constructor
+   * @returns {function}
    */
   proxy(type, defaultOptions = {}) {
     return async (message, options = {}) => {
@@ -262,6 +265,33 @@ class JobQueue extends EventEmitter {
 
       await this.push(job);
     };
+  }
+
+  /**
+   * Cancel a job if it exists in the job queue.
+   * Must provide one id or unique_id param. If both are provided, id is used
+   * and unique_id is ignored.
+   * @param {*} options={} - Optional parameters
+   * @param {*} options.id - ID of job to cancel
+   * @param {*} options.unique_id - Unique ID of job to cancel
+   * @returns {Job}
+   */
+  async cancel({ id, unique_id }) {
+    if (id == null && unique_id == null) {
+      throw new Error('id or unique_id param is required');
+    }
+
+    const data = await this._db.cancelJob(id, unique_id);
+
+    if (data == null) {
+      return;
+    }
+
+    const job = new Job(data, null, { _db: this._db });
+
+    this.emit('cancel', job);
+
+    return job;
   }
 
   /**

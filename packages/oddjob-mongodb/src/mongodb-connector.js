@@ -218,6 +218,22 @@ class MongodbConnector {
     return data;
   }
 
+  async cancelJob(id, unique_id) {
+    await this.connected();
+
+    const query = id != null ? { _id: new ObjectId(id) } : { unique_id };
+
+    const { value: data } = await this._jobs.findOneAndUpdate(
+      query,
+      { $set: { status: 'canceled', modified: new Date() } },
+      { returnOriginal: false }
+    );
+
+    initialize(data);
+
+    return data;
+  }
+
   async pollForRunnableJob(types, timeout, worker) {
     await this.connected();
 

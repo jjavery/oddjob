@@ -221,10 +221,6 @@ class SqliteConnector {
   async updateJobById(id, update) {
     await this.connected();
 
-    // if (update.unique_id == null) {
-    //   delete update.unique_id;
-    // }
-
     const client = this._client;
     const jobsTableName = this._jobsTableName;
 
@@ -235,6 +231,35 @@ class SqliteConnector {
     }
 
     const result = await client(jobsTableName).where({ id });
+
+    let data = null;
+
+    if (result != null && result.length === 1) {
+      data = result[0];
+
+      initialize(data);
+    }
+
+    return data;
+  }
+
+  async cancelJob(id, unique_id) {
+    await this.connected();
+
+    const client = this._client;
+    const jobsTableName = this._jobsTableName;
+
+    const query = id != null ? { id } : { unique_id };
+
+    const count = await client(jobsTableName)
+      .where(query)
+      .update({ status: 'canceled', modified: new Date() });
+
+    if (count == null || count === 0) {
+      return null;
+    }
+
+    const result = await client(jobsTableName).where(query);
 
     let data = null;
 

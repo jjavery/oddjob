@@ -367,6 +367,10 @@ class Job {
 
     const data = await this._db.updateRunningJob(this._data, update);
 
+    if (data == null) {
+      throw new Error("Can't complete canceled/missing job");
+    }
+
     this._data = data;
 
     if (result != null) {
