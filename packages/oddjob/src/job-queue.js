@@ -242,15 +242,32 @@ class JobQueue extends EventEmitter {
   /**
    * Push a job into the job queue
    * @param {Job} job - The job to push into the queue
+   * @returns {boolean} - Returns true if a new job was pushed, or false if the job already exists (based on id or unique_id)
    */
   async push(job) {
     job._set_db(this._db);
 
-    await job._save();
+    const pushed = await job._save();
 
-    debug('Pushed new job type "%s" id "%s"', job.type, job.id);
+    if (pushed) {
+      debug(
+        'Pushed new job type "%s" id "%s" unique_id "%s"',
+        job.type,
+        job.id,
+        job.unique_id
+      );
 
-    this.emit('push', job);
+      this.emit('push', job);
+    } else {
+      debug(
+        'Did not push job type "%s" id "%s" unique_id "%s" because it already exists',
+        job.type,
+        job.id,
+        job.unique_id
+      );
+    }
+
+    return pushed;
   }
 
   /**
@@ -263,7 +280,7 @@ class JobQueue extends EventEmitter {
     return async (message, options = {}) => {
       const job = new Job(type, message, { ...defaultOptions, ...options });
 
-      await this.push(job);
+      return this.push(job);
     };
   }
 
