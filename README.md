@@ -127,6 +127,8 @@ Provides access to a job queue
     * [.connect()](#markdown-header-jobqueueconnect)
     * [.disconnect()](#markdown-header-jobqueuedisconnect)
     * [.push(job)](#markdown-header-jobqueuepushjob)
+    * [.proxy(type, defaultOptions)](#markdown-header-jobqueueproxytype-defaultoptions-function) ⇒ function
+    * [.cancel(options)](#markdown-header-jobqueuecanceloptions-job) ⇒ Job
     * [.handle(type, options, fn)](#markdown-header-jobqueuehandletype-options-fn)
     * [.start()](#markdown-header-jobqueuestart)
     * [.pause()](#markdown-header-jobqueuepause)
@@ -155,7 +157,6 @@ Provides access to a job queue
 | options.idleSleep | number | `1000` | Milliseconds to sleep after completing a run loop when no jobs are acquired |
 | options.activeSleep | number | `10` | Milliseconds to sleep after completing a run loop when a job is acquired |
 | options.connect | boolean | `true` | Whether to connect to the database immediately |
-| options.workerPools | Array.<Object> |  | - |
 | options.connectOptions | Object |  | Options to pass along to the database connector |
 
 ### jobQueue.concurrency : number
@@ -189,6 +190,27 @@ Push a job into the job queue
 | Param | Type | Description |
 | --- | --- | --- |
 | job | Job | The job to push into the queue |
+
+### jobQueue.proxy(type, defaultOptions) ⇒ function
+Creates a proxy function that will push a new job when called
+
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| type | string |  | The job type. Only jobs of this type will be passed to the handle function. |
+| defaultOptions | Object | `{}` | Optional parameters sent to each Job constructor |
+
+### jobQueue.cancel(options) ⇒ Job
+Cancel a job if it exists in the job queue.
+Must provide one id or unique_id param. If both are provided, id is used
+and unique_id is ignored.
+
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| options | * | `{}` | Optional parameters |
+| options.id | * |  | ID of job to cancel |
+| options.unique_id | * |  | Unique ID of job to cancel |
 
 ### jobQueue.handle(type, options, fn)
 Configure the job queue to handle jobs of a particular type

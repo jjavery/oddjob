@@ -39,9 +39,34 @@ for (let [connector, uri] of Object.entries(connectionStrings)) {
     it('pushes a unique job into a job queue twice', async function () {
       const jobQueue = new JobQueue(uri);
 
+      const unique_id = randomInt();
+
+      const job1 = new Job(type, {}, { unique_id });
+      const job2 = new Job(type, {}, { unique_id });
+
       try {
-        await jobQueue.push(newJob);
-        await jobQueue.push(newJob);
+        await jobQueue.push(job1);
+        await jobQueue.push(job2);
+      } catch (err) {
+        throw err;
+      } finally {
+        await jobQueue.disconnect();
+      }
+    });
+
+    it('cancels a job', async function () {
+      const jobQueue = new JobQueue(uri);
+
+      const unique_id = randomInt();
+
+      const job = new Job(type, {}, { unique_id });
+
+      try {
+        await jobQueue.push(job);
+        const canceledJob = await jobQueue.cancel(job);
+
+        assert.isObject(canceledJob);
+        assert.equal(canceledJob.id, job.id);
       } catch (err) {
         throw err;
       } finally {
@@ -93,5 +118,52 @@ for (let [connector, uri] of Object.entries(connectionStrings)) {
 
       jobQueue.stop();
     });
+
+    it('cancels a running job', async function () {
+      const jobQueue = new JobQueue(uri, {
+        connectOptions: {
+          connectTimeoutMS: 1500
+        }
+      });
+
+      const type = 'cancel-test-' + randomInt();
+
+      const job = new Job(type);
+
+      await jobQueue.push(job);
+
+      const promise = new Promise((resolve, reject) => {
+        jobQueue.handle(type, async (job) => {
+          await jobQueue.cancel(job);
+          await sleep(100);
+        });
+
+        jobQueue.once('afterRun', (job) => {
+          resolve();
+        });
+
+        jobQueue.once('error', (err) => {
+          reject(err);
+        });
+      });
+
+      jobQueue.start();
+
+      try {
+        const result = await promise;
+
+        assert.fail('Failed to throw');
+      } catch (err) {}
+
+      jobQueue.stop();
+    });
   });
+}
+
+function randomInt(max = Number.MAX_SAFE_INTEGER) {
+  return Math.floor(Math.random() * Math.floor(max));
+}
+
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

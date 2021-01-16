@@ -1,6 +1,6 @@
 {
   "name": "@jjavery/oddjob-sqlite",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "SQLite connector for @jjavery/oddjob",
   "homepage": "https://github.com/jjavery/oddjob/packages/oddjob-sqlite#readme",
   "bugs": "https://github.com/jjavery/oddjob/issues",
