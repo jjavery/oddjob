@@ -213,8 +213,7 @@ class Job {
       throw new Error("Can't update timeout for timed-out job");
     }
 
-    const now = new Date();
-    const timeout = dayjs(now).add(seconds, 'seconds').toDate();
+    const timeout = dayjs().add(seconds, 'seconds').toDate();
 
     const data = await this._db.updateRunningJob(job, { timeout });
 
@@ -412,10 +411,9 @@ class Job {
     this._data = data;
 
     debug(
-      'Job type "%s" id "%s" timeout extended by %d seconds',
+      'Job type "%s" id "%s" set expired status',
       data.type,
-      data.id,
-      seconds
+      data.id
     );
   }
 
