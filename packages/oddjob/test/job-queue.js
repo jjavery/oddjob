@@ -122,6 +122,40 @@ for (let [connector, uri] of Object.entries(connectionStrings)) {
       jobQueue.stop();
     });
 
+    it('handles a job that throws an error', async function () {
+      const jobQueue = new JobQueue(uri, {
+        connectOptions: {
+          connectTimeoutMS: 1500
+        }
+      });
+
+      const type = 'throw-test-' + uuid.v4();
+
+      const job = new Job(type);
+
+      await jobQueue.push(job);
+
+      const promise = new Promise((resolve, reject) => {
+        jobQueue.handle(type, async (job) => {
+          throw new Error('test');
+        });
+
+        jobQueue.once('afterRun', (job) => {
+          resolve();
+        });
+
+        jobQueue.once('error', (err) => {
+          reject(err);
+        });
+      });
+
+      jobQueue.start();
+
+      const result = await promise;
+
+      jobQueue.stop();
+    });
+
     it('cancels a running job', async function () {
       const jobQueue = new JobQueue(uri, {
         connectOptions: {

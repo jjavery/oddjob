@@ -419,6 +419,28 @@ class Job {
     );
   }
 
+  async _error(err) {
+    const now = new Date();
+
+    const update = {
+      status: 'error',
+      modified: now
+    };
+
+    const data = await this._db.updateJobById(this.id, update);
+
+    this._data = data;
+
+    debug(
+      'Job type "%s" id "%s" set error status',
+      data.type,
+      data.id
+    );
+
+    // Log the error
+    await this.error(err);
+  }
+
   async _fail() {
     const now = new Date();
 

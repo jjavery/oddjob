@@ -251,9 +251,9 @@ class SqliteConnector {
       .where(query)
       .update({ status: 'canceled', modified: new Date() });
 
-    if (count == null || count === 0) {
-      return null;
-    }
+    // if (count == null || count === 0) {
+    //   return null;
+    // }
 
     const result = await client(jobsTableName).where(query);
 
@@ -276,7 +276,7 @@ class SqliteConnector {
     const query = (query) => {
       query
         .whereIn('type', types)
-        .whereIn('status', ['waiting', 'running', 'failed'])
+        .whereIn('status', ['waiting', 'running', 'error', 'failed'])
         .where('scheduled', '<=', now)
         .where((query) => {
           query
@@ -284,9 +284,13 @@ class SqliteConnector {
             .where((query) => {
               query.where('status', 'waiting');
             })
-            // was running and lock timed out
+            // was running and then canceled or lock timed out
             .orWhere((query) => {
               query.where('status', 'running').where('timeout', '<=', now);
+            })
+            // was running and then error
+            .orWhere((query) => {
+              query.where('status', 'error');
             })
             // recurring and failed
             .orWhere((query) => {

@@ -506,39 +506,35 @@ class JobQueue extends EventEmitter {
 
     debug_run('Type "%s" Running Count: %d', job.type, handler.running);
 
-    const handlerPromise = handler.fn(job, runningJob.onCancel);
+    Promise.resolve(handler.fn(job, runningJob.onCancel))
+      .then(
+        (result) => {
+          if (runningJob.canceled) {
+            debug_run(
+              'Job type "%s" id "%s" timed out and this run was canceled',
+              job.type,
+              job.id
+            );
+            return;
+          }
 
-    if (handlerPromise == null || typeof handlerPromise.then !== 'function') {
-      throw new Error('Handler function must return a promise');
-    }
-
-    handlerPromise
-      .catch((err) => {
-        debug_run(
-          'Error while running job type "%s" id "%s"',
-          job.type,
-          job.id
-        );
-        if (err?.message) {
-          debug_run('Error: %s', err.message);
-        }
-
-        this.emit('handlerError', err);
-
-        return job.error(err);
-      })
-      .then((result) => {
-        if (runningJob.canceled) {
+          return job._complete(result);
+        },
+        (err) => {
           debug_run(
-            'Job type "%s" id "%s" timed out and this run was canceled',
+            'Error while running job type "%s" id "%s"',
             job.type,
             job.id
           );
-          return;
-        }
+          if (err?.message) {
+            debug_run('Error: %s', err.message);
+          }
 
-        return job._complete(result);
-      })
+          this.emit('handlerError', err);
+
+          return job._error(err);
+        }
+      )
       .catch((err) => {
         debug_run(
           'Error while completing job type "%s" id "%s"',

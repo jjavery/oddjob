@@ -248,7 +248,7 @@ class MongodbConnector {
     const now = new Date();
 
     const query = {
-      status: { $in: ['waiting', 'running', 'failed'] },
+      status: { $in: ['waiting', 'running', 'error', 'failed'] },
       type: { $in: types },
       scheduled: { $lte: now },
       $or: [
@@ -256,10 +256,14 @@ class MongodbConnector {
         {
           status: 'waiting'
         },
-        // was running and lock timed out
+        // was running and then canceled or lock timed out
         {
           status: 'running',
           timeout: { $lte: now }
+        },
+        // was running and then error
+        {
+          status: 'error'
         },
         // recurring and failed
         {
