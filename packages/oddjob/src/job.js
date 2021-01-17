@@ -187,9 +187,9 @@ class Job {
       data.scheduled = getNextOccurrence(recurring);
     }
     if (delay != null && delay > 0) {
-      const delay_scheduled = dayjs().add(delay, 'seconds').toDate();
+      const delay_scheduled = dayjs().add(delay, 'seconds');
       data.scheduled = dayjs
-        .max(data.scheduled || new Date(), delay_scheduled)
+        .max(data.scheduled ? dayjs(data.scheduled) : dayjs(), delay_scheduled)
         .toDate();
     }
     if (expire != null) {
