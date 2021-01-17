@@ -2,7 +2,7 @@ const { assert } = require('chai');
 const uuid = require('uuid');
 const { JobQueue, Job } = require('../src/oddjob');
 
-const type = uuid.v4();
+const type = 'construct-' + uuid.v4();
 let newJob;
 
 const connectionStrings = {
@@ -39,7 +39,7 @@ for (let [connector, uri] of Object.entries(connectionStrings)) {
     it('pushes a unique job into a job queue twice', async function () {
       const jobQueue = new JobQueue(uri);
 
-      const unique_id = randomInt();
+      const unique_id = uuid.v4();
 
       const job1 = new Job(type, {}, { unique_id });
       const job2 = new Job(type, {}, { unique_id });
@@ -60,7 +60,7 @@ for (let [connector, uri] of Object.entries(connectionStrings)) {
     it('cancels a job', async function () {
       const jobQueue = new JobQueue(uri);
 
-      const unique_id = randomInt();
+      const unique_id = uuid.v4();
 
       const job = new Job(type, {}, { unique_id });
 
@@ -122,6 +122,40 @@ for (let [connector, uri] of Object.entries(connectionStrings)) {
       jobQueue.stop();
     });
 
+    it('handles a job that throws an error', async function () {
+      const jobQueue = new JobQueue(uri, {
+        connectOptions: {
+          connectTimeoutMS: 1500
+        }
+      });
+
+      const type = 'throw-test-' + uuid.v4();
+
+      const job = new Job(type);
+
+      await jobQueue.push(job);
+
+      const promise = new Promise((resolve, reject) => {
+        jobQueue.handle(type, async (job) => {
+          throw new Error('test');
+        });
+
+        jobQueue.once('afterRun', (job) => {
+          resolve();
+        });
+
+        jobQueue.once('error', (err) => {
+          reject(err);
+        });
+      });
+
+      jobQueue.start();
+
+      const result = await promise;
+
+      jobQueue.stop();
+    });
+
     it('cancels a running job', async function () {
       const jobQueue = new JobQueue(uri, {
         connectOptions: {
@@ -129,7 +163,7 @@ for (let [connector, uri] of Object.entries(connectionStrings)) {
         }
       });
 
-      const type = 'cancel-test-' + randomInt();
+      const type = 'cancel-test-' + uuid.v4();
 
       const job = new Job(type);
 
@@ -161,10 +195,6 @@ for (let [connector, uri] of Object.entries(connectionStrings)) {
       jobQueue.stop();
     });
   });
-}
-
-function randomInt(max = Number.MAX_SAFE_INTEGER) {
-  return Math.floor(Math.random() * Math.floor(max));
 }
 
 async function sleep(ms) {

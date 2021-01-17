@@ -51,11 +51,15 @@ class MongodbConnector {
     this._jobLogsCollectionName = jobLogsCollectionName;
     this._jobResultsCollectionName = jobResultsCollectionName;
 
-    delete options.jobsCollectionName;
-    delete options.jobLogsCollectionName;
-    delete options.jobResultsCollectionName;
+    if (options.client) {
+      this._client = client;
+    } else {
+      delete options.jobsCollectionName;
+      delete options.jobLogsCollectionName;
+      delete options.jobResultsCollectionName;
 
-    this._client = new MongoClient(uri, options);
+      this._client = new MongoClient(uri, options);
+    }
   }
 
   async connect() {
@@ -63,9 +67,13 @@ class MongodbConnector {
 
     if (connecting == null) {
       const _connect = async () => {
-        await this._client.connect();
+        const client = this._client;
 
-        const db = this._client.db();
+        if (!client.isConnected()) {
+          await client.connect();
+        }
+
+        const db = client.db();
 
         this._jobsCollection = db.collection(this._jobsCollectionName);
         this._jobLogsCollection = db.collection(this._jobLogsCollectionName);
@@ -240,7 +248,7 @@ class MongodbConnector {
     const now = new Date();
 
     const query = {
-      status: { $in: ['waiting', 'running', 'failed'] },
+      status: { $in: ['waiting', 'running', 'error', 'failed'] },
       type: { $in: types },
       scheduled: { $lte: now },
       $or: [
@@ -248,10 +256,14 @@ class MongodbConnector {
         {
           status: 'waiting'
         },
-        // was running and lock timed out
+        // was running and then canceled or lock timed out
         {
           status: 'running',
           timeout: { $lte: now }
+        },
+        // was running and then error
+        {
+          status: 'error'
         },
         // recurring and failed
         {

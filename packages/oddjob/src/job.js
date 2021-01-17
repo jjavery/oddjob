@@ -187,9 +187,9 @@ class Job {
       data.scheduled = getNextOccurrence(recurring);
     }
     if (delay != null && delay > 0) {
-      const delay_scheduled = dayjs().add(delay, 'seconds').toDate();
+      const delay_scheduled = dayjs().add(delay, 'seconds');
       data.scheduled = dayjs
-        .max(data.scheduled || new Date(), delay_scheduled)
+        .max(data.scheduled ? dayjs(data.scheduled) : dayjs(), delay_scheduled)
         .toDate();
     }
     if (expire != null) {
@@ -213,8 +213,7 @@ class Job {
       throw new Error("Can't update timeout for timed-out job");
     }
 
-    const now = new Date();
-    const timeout = dayjs(now).add(seconds, 'seconds').toDate();
+    const timeout = dayjs().add(seconds, 'seconds').toDate();
 
     const data = await this._db.updateRunningJob(job, { timeout });
 
@@ -412,11 +411,32 @@ class Job {
     this._data = data;
 
     debug(
-      'Job type "%s" id "%s" timeout extended by %d seconds',
+      'Job type "%s" id "%s" set expired status',
       data.type,
-      data.id,
-      seconds
+      data.id
     );
+  }
+
+  async _error(err) {
+    const now = new Date();
+
+    const update = {
+      status: 'error',
+      modified: now
+    };
+
+    const data = await this._db.updateJobById(this.id, update);
+
+    this._data = data;
+
+    debug(
+      'Job type "%s" id "%s" set error status',
+      data.type,
+      data.id
+    );
+
+    // Log the error
+    await this.error(err);
   }
 
   async _fail() {
