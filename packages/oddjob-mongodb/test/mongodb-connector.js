@@ -83,6 +83,16 @@ describe('db', function () {
     assert.equal(job.timeout.getTime(), 2);
   });
 
+  it('cancels a job', async function () {
+    let job = db.createJob({ type: 'test' });
+
+    job = await db.cancelJob(job._id);
+
+    assert.isObject(job);
+    assert.isString(job.id);
+    assert.equal(job.status, 'canceled');
+  });
+
   it('writes a job log message', async function () {
     const log = await db.writeJobLog(runningJob.id, 'info', 'test');
 
