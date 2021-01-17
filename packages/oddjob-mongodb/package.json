@@ -1,6 +1,6 @@
 {
   "name": "@jjavery/oddjob-mongodb",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "MongoDB connector for @jjavery/oddjob",
   "keywords": [
     "oddjob",
