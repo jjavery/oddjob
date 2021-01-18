@@ -249,7 +249,7 @@ class Job {
     );
     debug('%j', message);
 
-    await this._db.writeJobLog(this.id, level, message);
+    await this._db.writeJobLog(this.type, this.id, level, message);
   }
 
   /**
@@ -388,7 +388,7 @@ class Job {
     this._data = data;
 
     if (result != null) {
-      await this._db.writeJobResult(this.id, result);
+      await this._db.writeJobResult(this.type, this.id, result);
     }
 
     debug(

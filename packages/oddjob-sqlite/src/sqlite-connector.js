@@ -121,6 +121,7 @@ class SqliteConnector {
     if (!(await client.schema.hasTable(jobLogsTableName))) {
       await client.schema.createTable(jobLogsTableName, (table) => {
         table.uuid('id').primary();
+        table.string('job_type', 256).notNullable();
         table
           .uuid('job_id')
           .references('id')
@@ -142,6 +143,7 @@ class SqliteConnector {
           .references('id')
           .inTable('jobs')
           .onDelete('CASCADE');
+        table.string('job_type', 256).notNullable();
         table.json('message');
         table.dateTime('created').notNullable();
         table.index(['created']);
@@ -389,11 +391,12 @@ class SqliteConnector {
     return data;
   }
 
-  async writeJobLog(id, level, message) {
+  async writeJobLog(type, id, level, message) {
     await this.connected();
 
     const data = {
       id: uuid.v4(),
+      job_type: type,
       job_id: id,
       level,
       message,
@@ -428,11 +431,12 @@ class SqliteConnector {
     return data;
   }
 
-  async writeJobResult(id, message) {
+  async writeJobResult(type, id, message) {
     await this.connected();
 
     const data = {
       id: id,
+      job_type: type,
       message,
       created: new Date()
     };
