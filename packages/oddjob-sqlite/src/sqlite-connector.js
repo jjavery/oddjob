@@ -307,19 +307,21 @@ class SqliteConnector {
       modified: now
     };
 
-    debug('Begin poll query %j', query);
-
     const client = this._client;
     const jobsTableName = this._jobsTableName;
 
-    // Get a candidate
-    const result = await client(jobsTableName)
+    const command = client(jobsTableName)
       .where(query)
       .orderBy([
         { column: 'priority', order: 'asc' },
         { column: 'created', order: 'asc' }
       ])
       .limit(1);
+
+    debug('Begin poll query %j', command.toString());
+
+    // Get a candidate
+    const result = await command;
 
     let data = null;
 
