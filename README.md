@@ -145,6 +145,7 @@ Provides access to a job queue
     * ["beforeRun"](#markdown-header-beforerun)
     * ["afterRun"](#markdown-header-afterrun)
     * ["timeout"](#markdown-header-timeout)
+    * ["cancel"](#markdown-header-cancel)
 
 ### new JobQueue(uri, options)
 
@@ -269,6 +270,9 @@ Emitted after a job runs.
 ### "timeout"
 Emitted when a job times out and is canceled.
 
+### "cancel"
+Emitted when a job is canceled.
+
 ## Job
 Provides access to the properties and methods needed to define a job
 
@@ -291,10 +295,11 @@ Provides access to the properties and methods needed to define a job
         * [.isComplete](#markdown-header-jobiscomplete-boolean) : boolean
         * [.hasTimedOut](#markdown-header-jobhastimedout-boolean) : boolean
         * [.hasExpired](#markdown-header-jobhasexpired-boolean) : boolean
+        * [.hasError](#markdown-header-jobhaserror-boolean) : boolean
         * [.canRetry](#markdown-header-jobcanretry-boolean) : boolean
         * [.updateTimeout(seconds)](#markdown-header-jobupdatetimeoutseconds)
         * [.log(level, message)](#markdown-header-jobloglevel-message)
-        * [.error(message)](#markdown-header-joberrormessage)
+        * [.error(error)](#markdown-header-joberrorerror)
         * [.warn(message)](#markdown-header-jobwarnmessage)
         * [.info(message)](#markdown-header-jobinfomessage)
         * [.debug(message)](#markdown-header-jobdebugmessage)
@@ -363,6 +368,9 @@ Has the job's lock timed out?
 ### job.hasExpired : boolean
 Has the job expired?
 
+### job.hasError : boolean
+Has the job's handler thrown an exception?
+
 ### job.canRetry : boolean
 Is the job eligible to be retried?
 
@@ -383,13 +391,13 @@ Write to the job's log
 | level | string | `"info"` | The log level |
 | message | any |  | The message to log |
 
-### job.error(message)
+### job.error(error)
 Write to the job's log with level = "error"
 
 
 | Param | Type | Description |
 | --- | --- | --- |
-| message | any | The message to log |
+| error | any | The error to log |
 
 ### job.warn(message)
 Write to the job's log with level = "warn"
