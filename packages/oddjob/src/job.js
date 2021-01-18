@@ -132,6 +132,14 @@ class Job {
   }
 
   /**
+   * Has the job's handler thrown an exception?
+   * @type {boolean}
+   */
+  get hasError() {
+    return this._data.status === 'error';
+  }
+
+  /**
    * Is the job eligible to be retried?
    * @type {boolean}
    */

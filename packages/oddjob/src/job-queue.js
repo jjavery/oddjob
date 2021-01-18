@@ -236,6 +236,22 @@ class JobQueue extends EventEmitter {
       return;
     }
 
+    // Tell all the running jobs to cancel
+    this._cancelAllRunningJobs();
+
+    // Wait for all running jobs to complete
+    await new Promise((resolve) => {
+      const timer = setInterval(() => {
+        if (this.running > 0) {
+          return;
+        }
+
+        clearInterval(timer);
+
+        resolve();
+      }, 100);
+    });
+
     this._connected = false;
 
     await this._db.disconnect();
@@ -376,12 +392,28 @@ class JobQueue extends EventEmitter {
    * Stops the job queue
    */
   stop(disconnect = true) {
+    this._stop();
+
     if (disconnect) {
       this.disconnect().catch((err) => {
         this.emit('error', err);
       });
-    }
 
+      debug_loop('Stopped looping');
+
+      this.emit('stop');
+    } else {
+      debug_loop('Paused looping');
+
+      this.emit('pause');
+    }
+  }
+
+  /**
+   * Stop looping
+   * @private
+   */
+  _stop() {
     if (!this._looping) {
       return;
     }
@@ -390,16 +422,6 @@ class JobQueue extends EventEmitter {
 
     clearTimeout(this._timer);
     this._timer = null;
-
-    if (!disconnect) {
-      debug_loop('Paused looping');
-
-      this.emit('pause');
-    } else {
-      debug_loop('Stopped looping');
-
-      this.emit('stop');
-    }
   }
 
   /**
@@ -440,7 +462,7 @@ class JobQueue extends EventEmitter {
             debug_loop('Updated failed job');
           } else {
             // Found a job? Run it
-            this._run(job);
+            await this._run(job);
           }
         }
       } catch (err) {
@@ -450,11 +472,20 @@ class JobQueue extends EventEmitter {
 
     // If one job was found in the queue, there might be more, so don't sleep
     // long. If the queue is empty, can take a longer nap.
-    const sleep = job ? this.activeSleep : this.idleSleep;
+    const sleep = job != null ? this.activeSleep : this.idleSleep;
 
     debug_loop('End loop');
 
+    // Did looping stop while this loop was running? If so, don't start another
+    // loop.
+    if (!this._looping) {
+      return;
+    }
+
+    debug_loop('Sleeping for %dms', sleep);
+
     if (sleep === 0) {
+      // setImmediate gives a tighter loop than setTimeout
       setImmediate(() => this._loop());
     } else {
       debug_loop('Sleeping for %dms', sleep);
@@ -495,7 +526,7 @@ class JobQueue extends EventEmitter {
    * @param {Job} job
    * @private
    */
-  _run(job) {
+  async _run(job) {
     debug_run('Begin run job type "%s" id "%s"', job.type, job.id);
 
     this.emit('beforeRun', job);
@@ -512,38 +543,14 @@ class JobQueue extends EventEmitter {
 
     debug_run('Type "%s" Running Count: %d', job.type, handler.running);
 
-    Promise.resolve(handler.fn(job, runningJob.onCancel))
-      .then(
-        (result) => {
-          if (runningJob.canceled) {
-            debug_run(
-              'Job type "%s" id "%s" timed out and this run was canceled',
-              job.type,
-              job.id
-            );
-            return;
-          }
+    try {
+      let result;
 
-          return job._complete(result);
-        },
-        (err) => {
-          debug_run(
-            'Error while running job type "%s" id "%s"',
-            job.type,
-            job.id
-          );
-          if (err?.message) {
-            debug_run('Error: %s', err.message);
-          }
-
-          this.emit('handlerError', err);
-
-          return job._error(err);
-        }
-      )
-      .catch((err) => {
+      try {
+        result = await Promise.resolve(handler.fn(job, runningJob.onCancel));
+      } catch (err) {
         debug_run(
-          'Error while completing job type "%s" id "%s"',
+          'Error while running job type "%s" id "%s"',
           job.type,
           job.id
         );
@@ -551,20 +558,49 @@ class JobQueue extends EventEmitter {
           debug_run('Error: %s', err.message);
         }
 
-        this.emit('error', err);
-      })
-      .finally(() => {
-        // Remove the job from the list of currently running jobs
-        this._removeRunningJob(job);
+        this.emit('handlerError', err);
 
-        // Decrement counts of currently running jobs for the job queue and handler
-        this._running--;
-        handler.running--;
+        await job._error(err);
+      }
 
-        debug_run('End run job type "%s" id "%s"', job.type, job.id);
+      if (runningJob.canceled) {
+        debug_run(
+          'Job type "%s" id "%s" timed out and this run was canceled',
+          job.type,
+          job.id
+        );
+      } else if (job.hasError) {
+        debug_run(
+          'Job type "%s" id "%s" threw an error and did not complete',
+          job.type,
+          job.id
+        );
+      } else {
+        await job._complete(result);
+      }
+    } catch (err) {
+      debug_run(
+        'Error while completing job type "%s" id "%s"',
+        job.type,
+        job.id
+      );
+      if (err?.message) {
+        debug_run('Error: %s', err.message);
+      }
 
-        this.emit('afterRun', job);
-      });
+      this.emit('error', err);
+    } finally {
+      // Remove the job from the list of currently running jobs
+      this._removeRunningJob(job);
+
+      // Decrement counts of currently running jobs for the job queue and handler
+      this._running--;
+      handler.running--;
+
+      debug_run('End run job type "%s" id "%s"', job.type, job.id);
+
+      this.emit('afterRun', job);
+    }
   }
 
   /**
@@ -617,6 +653,16 @@ class JobQueue extends EventEmitter {
   }
 
   /**
+   * Cancels all running jobs
+   * @private
+   */
+  _cancelAllRunningJobs() {
+    for (let [key, { job }] of this._runningJobs) {
+      this._cancelRunningJob(job);
+    }
+  }
+
+  /**
    * Cancels a currently running job by calling any listeners its handler has added via the onCancel function
    * @param {Job} job - The job to cancel
    * @private
@@ -634,7 +680,7 @@ class JobQueue extends EventEmitter {
       try {
         cancelListener();
       } catch (err) {
-        emit('error', err);
+        this.emit('error', err);
       }
     }
 
