@@ -110,6 +110,10 @@ for (let [connector, uri] of Object.entries(connectionStrings)) {
           resolve();
         });
 
+        jobQueue.once('handlerError', (err) => {
+          reject(err);
+        });
+
         jobQueue.once('error', (err) => {
           reject(err);
         });
@@ -135,25 +139,38 @@ for (let [connector, uri] of Object.entries(connectionStrings)) {
 
       await jobQueue.push(job);
 
+      async function handler(job) {
+        throw new Error('test');
+      }
+
       const promise = new Promise((resolve, reject) => {
-        jobQueue.handle(type, async (job) => {
-          throw new Error('test');
-        });
+        jobQueue.handle(type, handler);
 
         jobQueue.once('afterRun', (job) => {
           resolve();
         });
 
-        jobQueue.once('error', (err) => {
+        jobQueue.once('handlerError', (err) => {
           reject(err);
         });
       });
 
+      jobQueue.once('error', (err) => {
+        console.log('this should not happen');
+        console.log(err);
+      });
+
       jobQueue.start();
 
-      const result = await promise;
+      try {
+        const result = await promise;
 
-      jobQueue.stop();
+        assert.fail('Failed to throw');
+      } catch (err) {
+        assert.isNotNull(err);
+      } finally {
+        jobQueue.stop();
+      }
     });
 
     it('cancels a running job', async function () {
@@ -190,7 +207,9 @@ for (let [connector, uri] of Object.entries(connectionStrings)) {
         const result = await promise;
 
         assert.fail('Failed to throw');
-      } catch (err) {}
+      } catch (err) {
+        assert.isNotNull(err);
+      }
 
       jobQueue.stop();
     });

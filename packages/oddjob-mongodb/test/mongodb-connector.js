@@ -94,7 +94,7 @@ describe('db', function () {
   });
 
   it('writes a job log message', async function () {
-    const log = await db.writeJobLog(runningJob.id, 'info', 'test');
+    const log = await db.writeJobLog(runningJob.type, runningJob.id, 'info', 'test');
 
     assert.isObject(log);
     assert.equal(log.level, 'info');
@@ -111,7 +111,7 @@ describe('db', function () {
   });
 
   it('writes a job result', async function () {
-    const result = await db.writeJobResult(runningJob.id, 'test');
+    const result = await db.writeJobResult(runningJob.type, runningJob.id, 'test');
 
     assert.isObject(result);
     assert.equal(result.message, 'test');

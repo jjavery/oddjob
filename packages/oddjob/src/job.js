@@ -2,6 +2,7 @@ const os = require('os');
 const debug = require('debug')('oddjob:job');
 const dayjs = require('dayjs');
 const cronParser = require('cron-parser');
+const { serializeError } = require('serialize-error');
 
 const client = `${os.hostname()}[${process.pid}]`;
 
@@ -131,6 +132,14 @@ class Job {
   }
 
   /**
+   * Has the job's handler thrown an exception?
+   * @type {boolean}
+   */
+  get hasError() {
+    return this._data.status === 'error';
+  }
+
+  /**
    * Is the job eligible to be retried?
    * @type {boolean}
    */
@@ -238,23 +247,25 @@ class Job {
       level = 'info';
     }
 
-    await this._db.writeJobLog(this.id, level, message);
+    message = serializeError(message);
 
     debug(
-      'Job type "%s" id "%s" wrote log level "%s":',
+      'Job type "%s" id "%s" log level "%s":',
       this._data.type,
       this._data.id,
       level
     );
     debug('%j', message);
+
+    await this._db.writeJobLog(this.type, this.id, level, message);
   }
 
   /**
    * Write to the job's log with level = "error"
-   * @param {any} message - The message to log
+   * @param {any} error - The error to log
    */
-  async error(message) {
-    await this.log('error', message);
+  async error(error) {
+    await this.log('error', error);
   }
 
   /**
@@ -385,7 +396,7 @@ class Job {
     this._data = data;
 
     if (result != null) {
-      await this._db.writeJobResult(this.id, result);
+      await this._db.writeJobResult(this.type, this.id, result);
     }
 
     debug(
@@ -410,11 +421,7 @@ class Job {
 
     this._data = data;
 
-    debug(
-      'Job type "%s" id "%s" set expired status',
-      data.type,
-      data.id
-    );
+    debug('Job type "%s" id "%s" set expired status', data.type, data.id);
   }
 
   async _error(err) {
@@ -429,11 +436,7 @@ class Job {
 
     this._data = data;
 
-    debug(
-      'Job type "%s" id "%s" set error status',
-      data.type,
-      data.id
-    );
+    debug('Job type "%s" id "%s" set error status', data.type, data.id);
 
     // Log the error
     await this.error(err);

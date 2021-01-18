@@ -332,11 +332,12 @@ class MongodbConnector {
     return data;
   }
 
-  async writeJobLog(id, level, message) {
+  async writeJobLog(type, id, level, message) {
     await this.connected();
 
     const data = {
       _id: new ObjectId(),
+      job_type: type,
       job_id: new ObjectId(id),
       level,
       message,
@@ -366,11 +367,12 @@ class MongodbConnector {
     return data;
   }
 
-  async writeJobResult(id, message) {
+  async writeJobResult(type, id, message) {
     await this.connected();
 
     const data = {
       _id: new ObjectId(id),
+      job_type: type,
       message,
       created: new Date()
     };
