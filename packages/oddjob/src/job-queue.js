@@ -83,6 +83,12 @@ class JobQueue extends EventEmitter {
    */
 
   /**
+   * Emitted when a job is canceled.
+   * @event JobQueue#cancel
+   * @type {Job} - Job that was canceled.
+   */
+
+  /**
    * Maximum number of jobs that may run concurrently
    * @type {number}
    */
