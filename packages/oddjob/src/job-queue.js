@@ -165,7 +165,7 @@ class JobQueue extends EventEmitter {
     }
 
     // Parse the connection uri,
-    const matches = uri.match(/^[^:]+/);
+    const matches = uri.match(/^[^:+]+/);
 
     if (matches.length !== 1) {
       throw new Error('Invalid connection URI');
