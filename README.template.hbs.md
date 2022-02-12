@@ -114,4 +114,4 @@ async function disconnect() {
 
 ---
 
-Copyright &copy; 2020 James P. Javery [@jjavery](https://github.com/jjavery)
+Copyright &copy; 2022 James P. Javery [@jjavery](https://github.com/jjavery)

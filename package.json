@@ -1,7 +1,7 @@
 {
   "name": "@jjavery/oddjob-monorepo",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.15.0",
   "description": "A job queue for Node.js applications",
   "main": "index.js",
   "directories": {
@@ -16,8 +16,8 @@
   "license": "MIT",
   "devDependencies": {
     "@jjavery/dmd-jjavery": "^0.1.0",
-    "jsdoc-to-markdown": "^6.0.1",
-    "lerna": "^3.22.1"
+    "jsdoc-to-markdown": "^7.1.1",
+    "lerna": "^4.0.0"
   },
   "mochaExplorer.files": "packages/oddjob/test/**/*.js"
 }
