@@ -183,7 +183,7 @@ class SqliteConnector {
     try {
       await client(jobsTableName).insert(job);
     } catch (err) {
-      if (err != null && err.errno === 19) {
+      if (err != null && err.errno === 2067) {
         throw new Error('duplicate-key');
       } else {
         throw err;
