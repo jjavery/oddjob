@@ -13,28 +13,15 @@ class MongodbConnector {
   _connecting = null;
   _indexesCreated = false;
 
-  get _isConnected() {
-    return this._client ?? this._client.isConnected();
-  }
-
   get _jobs() {
-    if (!this._isConnected) {
-      throw new Error('Client is not connected');
-    }
     return this._jobsCollection;
   }
 
   get _jobLogs() {
-    if (!this._isConnected) {
-      throw new Error('Client is not connected');
-    }
     return this._jobLogsCollection;
   }
 
   get _jobResults() {
-    if (!this._isConnected) {
-      throw new Error('Client is not connected');
-    }
     return this._jobResultsCollection;
   }
 
@@ -69,9 +56,7 @@ class MongodbConnector {
       const _connect = async () => {
         const client = this._client;
 
-        if (!client.isConnected()) {
-          await client.connect();
-        }
+        await client.connect();
 
         const db = client.db();
 
@@ -177,7 +162,7 @@ class MongodbConnector {
       await this._jobs.findOneAndUpdate(
         { _id: new ObjectId(job.id) },
         { $set },
-        { upsert: true, returnOriginal: false }
+        { upsert: true, returnDocument: 'after' }
       );
     } catch (err) {
       if (err != null && err.code === 11000) {
@@ -218,7 +203,7 @@ class MongodbConnector {
         _id: new ObjectId(id)
       },
       { $set: update },
-      { returnOriginal: false }
+      { returnDocument: 'after' }
     );
 
     initialize(data);
@@ -234,7 +219,7 @@ class MongodbConnector {
     const { value: data } = await this._jobs.findOneAndUpdate(
       query,
       { $set: { status: 'canceled', modified: new Date() } },
-      { returnOriginal: false }
+      { returnDocument: 'after' }
     );
 
     initialize(data);
@@ -293,7 +278,7 @@ class MongodbConnector {
         priority: 1,
         created: 1
       },
-      returnOriginal: false
+      returnDocument: 'after'
     });
 
     initialize(data);
@@ -324,7 +309,7 @@ class MongodbConnector {
     const { value: data } = await this._jobs.findOneAndUpdate(
       query,
       { $set: update },
-      { returnOriginal: false }
+      { returnDocument: 'after' }
     );
 
     initialize(data);
