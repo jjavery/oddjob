@@ -4,7 +4,7 @@
     "node": true
   },
   "extends": [
-    "babel-eslint",
+    "@babel/eslint-parser",
     "plugin:promise/recommended",
     "plugin:mocha/recommended"
   ],

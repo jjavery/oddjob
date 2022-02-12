@@ -1,8 +1,8 @@
 {
   "name": "@jjavery/oddjob-sqlite",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "SQLite connector for @jjavery/oddjob",
-  "homepage": "https://github.com/jjavery/oddjob/packages/oddjob-sqlite#readme",
+  "homepage": "https://github.com/jjavery/oddjob/tree/master/packages/oddjob-sqlite#readme",
   "bugs": "https://github.com/jjavery/oddjob/issues",
   "license": "MIT",
   "author": "James P. Javery <james.javery@gmail.com> (https://github.com/jjavery)",
@@ -18,23 +18,23 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "connection-string": "^4.3.2",
-    "debug": "^4.3.1",
-    "knex": "^0.21.16",
-    "sqlite3": "^5.0.1",
+    "@vscode/sqlite3": "^5.0.7",
+    "connection-string": "^4.3.5",
+    "debug": "^4.3.3",
+    "knex": "^1.0.3",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
-    "@babel/cli": "^7.12.10",
-    "@babel/core": "^7.12.10",
-    "@babel/preset-env": "^7.12.11",
-    "@babel/register": "^7.12.10",
-    "babel-eslint": "^10.1.0",
-    "chai": "^4.2.0",
+    "@babel/cli": "^7.17.0",
+    "@babel/core": "^7.17.2",
+    "@babel/eslint-parser": "^7.17.0",
+    "@babel/preset-env": "^7.16.11",
+    "@babel/register": "^7.17.0",
+    "chai": "^4.3.6",
     "eslint": "^7.18.0",
     "eslint-plugin-mocha": "^8.0.0",
     "eslint-plugin-promise": "^4.2.1",
-    "mocha": "^8.2.1",
+    "mocha": "^9.2.0",
     "nyc": "^15.1.0"
   },
   "engines": {
