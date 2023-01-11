@@ -21,7 +21,7 @@
     "@vscode/sqlite3": "^5.0.7",
     "connection-string": "^4.3.5",
     "debug": "^4.3.3",
-    "knex": "^1.0.3",
+    "knex": "^2.4.0",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
